@@ -9,7 +9,7 @@ class BulletManager:
         self.spawn_time = 0
         self.angle_offset = 0
         self.settings = Settings()
-
+        self.radius = 5
     def create_ring(self, x, y, num_bullets=24, speed=3, fade=0):
         """Creates a circular bullet pattern"""
         angle_step = 2 * math.pi / num_bullets
