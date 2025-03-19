@@ -12,7 +12,7 @@ class Player(pygame.sprite.Sprite):
         self.bullets=[]
         self.radius=5
         self.x=self.settings.screen_width//2
-        self.y=self.settings.screen_height-40
+        self.y=self.settings.screen_height-100
     def draw_player(self):
         pygame.draw.circle(self.screen,(255,0,0),(self.x,self.y),self.radius)
     def update_player(self):
@@ -52,5 +52,19 @@ class Player(pygame.sprite.Sprite):
             self.y = self.radius  # Giữ trong giới hạn trên
         if self.y + self.radius > self.settings.screen_height:
             self.y = self.settings.screen_height - self.radius
+        box_x, box_y, box_size = self.settings.screen_width // 2, self.settings.screen_height // 2, 500
+        left = box_x - box_size // 2
+        right = box_x + box_size // 2
+        top = box_y - box_size // 2
+        bottom = box_y + box_size // 2
+
+        if self.x - self.radius < left:
+           self.x = left + self.radius  
+        if self.x + self.radius > right:
+           self.x = right - self.radius  
+        if self.y - self.radius < top:
+           self.y = top + self.radius  
+        if self.y + self.radius > bottom:
+           self.y = bottom - self.radius  
    
         
