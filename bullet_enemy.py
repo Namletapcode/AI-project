@@ -2,7 +2,7 @@ import pygame
 import math
 
 class Bullet_enemy:
-    def __init__(self, x, y, angle, speed, fade=0, color=(255, 0, 0), bouncing=False, from_corner=False):
+    def __init__(self, x, y, angle, speed, fade=0, color=(255, 255, 255), bouncing=False, from_corner=False):
         self.x = x
         self.y = y
         self.angle = angle
