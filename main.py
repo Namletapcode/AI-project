@@ -5,6 +5,7 @@ import time
 from enemy import BulletManager
 from player import Player
 import math
+from bullet_enemy import Bullet_enemy
 class Game:
     def __init__(self):
         pygame.init()
@@ -18,6 +19,8 @@ class Game:
         self.group=pygame.sprite.Group()
         self.enemy_x, self.enemy_y = self.settings.screen_width // 2, self.settings.screen_height // 2
         #self.space_surface = pygame.image.load('Touhou/image/space3.gif').convert()
+        self.hit=False
+        self.frame_index=0
     def run(self):
         while True:
             self.dt = min(self.clock.tick(self.settings.fps) / 1000, self.settings.dt_max)  #thời gian giữa 2 khung hình khi chuyển động
@@ -39,6 +42,9 @@ class Game:
     def update_screen(self):
         self.screen.fill((0, 0, 0))
         #self.screen.blit(self.space_surface, (0, 0))
+        box_x, box_y, box_size = self.settings.screen_width // 2, self.settings.screen_height // 2, 500
+        pygame.draw.rect(self.screen, (255, 255, 255), 
+                     (box_x - box_size // 2, box_y - box_size // 2, box_size, box_size), 2)
         self.player.update_player()
         self.player.draw_player()
         self.player.handle_screen_collision()
@@ -64,6 +70,7 @@ class Game:
         
         self.bullet_manager.update()
         self.bullet_manager.draw(self.screen)
+        self.check_colision()
         self.group.update(self.dt)
         self.group.draw(self.screen)
         pygame.display.flip()
@@ -71,6 +78,13 @@ class Game:
         bullet_data = self.get_all_bullets_info()
         print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
 
+    def check_colision(self):
+        for bullet in self.bullet_manager.bullets:
+           distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
+           if distance <= self.player.radius + bullet.radius:
+            print("Game Over")
+            pygame.quit()
+            sys.exit()
 
 game = Game()
 game.run()
