@@ -9,7 +9,7 @@ class BulletManager:
         self.spawn_time = 0
         self.angle_offset = 0
         self.settings = Settings()
-
+        self.radius = 5
     def create_ring(self, x, y, num_bullets=24, speed=3, fade=0):
         """Creates a circular bullet pattern"""
         angle_step = 2 * math.pi / num_bullets
@@ -41,7 +41,7 @@ class BulletManager:
             angle = math.radians(90) + math.sin((pygame.time.get_ticks() + i * 10) / 100) * wave_amplitude
             self.bullets.append(Bullet_enemy(x, y, angle, speed, fade=fade))
 
-    def create_negative_speed_spiral(self, x, y, num_bullets=50, speed=-2, rotation_speed=5, fade=0, color=(0, 255, 0)):
+    def create_negative_speed_spiral(self, x, y, num_bullets=50, speed=-2, rotation_speed=5, fade=0, color=(255, 255, 255)):
         """Creates a spiral with bullets moving inwards (negative speed)"""
         base_angle = math.radians(self.angle_offset)
         angle_step = 2 * math.pi / num_bullets
@@ -50,7 +50,7 @@ class BulletManager:
             self.bullets.append(Bullet_enemy(x, y, angle, speed, fade=fade, color=color))
         self.angle_offset -= rotation_speed  # Rotate in opposite direction
 
-    def create_expanding_spiral(self, x, y, num_bullets=36, initial_speed=2, speed_increment=0.1, fade=0, color=(255, 0, 0)):
+    def create_expanding_spiral(self, x, y, num_bullets=36, initial_speed=2, speed_increment=0.1, fade=0, color=(255, 255, 255)):
         """Creates a spiral where bullets gradually speed up"""
         base_angle = math.radians(self.angle_offset)
         angle_step = 2 * math.pi / num_bullets
