@@ -20,7 +20,7 @@ class Game:
         self.FIRE_BULLET_EVENT = pygame.USEREVENT + 1   
         pygame.time.set_timer(self.FIRE_BULLET_EVENT, 100)
 
-        self.space_surface = pygame.image.load('Touhou/image/space3.gif').convert()
+        self.space_surface = pygame.image.load('image/space3.gif').convert()
         self.enemy_x, self.enemy_y = self.settings.screen_width // 2, self.settings.screen_height // 2
         self.bullet_manager = BulletManager()
 
@@ -44,7 +44,7 @@ class Game:
             
     def update_screen(self):
         self.screen.fill((0, 0, 0))
-        self.screen.blit(self.space_surface, (0, 0))
+        #self.screen.blit(self.space_surface, (0, 0))
         self.player.update_player()
         self.player.draw_player()
         if pygame.time.get_ticks() % 100 == 0:
