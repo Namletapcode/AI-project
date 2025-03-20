@@ -1,6 +1,7 @@
 import pygame
 from settings import Settings
 from bullet import Bullet
+import math
 class Player(pygame.sprite.Sprite):
     def __init__(self, game):
         super().__init__() #kế thừa lớp con từ lớp cha
@@ -13,6 +14,7 @@ class Player(pygame.sprite.Sprite):
         self.radius=5
         self.x=self.settings.screen_width//2
         self.y=self.settings.screen_height-100
+        
     def draw_player(self):
         pygame.draw.circle(self.screen,(255,0,0),(self.x,self.y),self.radius)
     def update_player(self):
@@ -23,20 +25,50 @@ class Player(pygame.sprite.Sprite):
            bullet.draw()
            if bullet.y <0:
                self.bullets.remove(bullet)
-              
+
+    def move_left(self):
+        self.x -= self.settings.player_speed
+        self.handle_screen_collision()
+    def move_right(self):
+        self.x += self.settings.player_speed
+        self.handle_screen_collision
+    def move_up(self):
+        self.y -= self.settings.player_speed
+        self.handle_screen_collision
+    def move_down(self):
+        self.y += self.settings.player_speed
+        self.handle_screen_collision()
+     
     def input(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            self.direction.x = -1
-        elif keys[pygame.K_RIGHT]:
-            self.direction.x = 1
-        else: self.direction.x=0 
+            self.x -= self.settings.player_speed
+        if keys[pygame.K_RIGHT]:
+            self.x += self.settings.player_speed
         if keys[pygame.K_UP]:
-            self.direction.y = -1
-        elif keys[pygame.K_DOWN]:
-            self.direction.y = 1
-        else: self.direction.y=0
-      
+            self.y -= self.settings.player_speed
+        if keys[pygame.K_DOWN]:
+            self.y += self.settings.player_speed
+    def move_diagonal_up_left(self):
+      self.x -= self.settings.player_speed
+      self.y -= self.settings.player_speed
+      self.handle_screen_collision()
+
+def move_diagonal_up_right(self):
+    self.x += self.settings.player_speed
+    self.y -= self.settings.player_speed
+    self.handle_screen_collision()
+
+def move_diagonal_down_left(self):
+    self.x -= self.settings.player_speed
+    self.y += self.settings.player_speed
+    self.handle_screen_collision()
+
+def move_diagonal_down_right(self):
+    self.x += self.settings.player_speed
+    self.y += self.settings.player_speed
+    self.handle_screen_collision()
+  
     def move(self):
          if self.direction.x and self.direction.y:
              self.direction.normalize()
