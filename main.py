@@ -66,7 +66,7 @@ class Game:
         
         self.bullet_manager.update()
         self.bullet_manager.draw(self.screen)
-        #self.check_collision()
+        self.check_collision()
         self.group.update(self.dt)
         self.group.draw(self.screen)
         pygame.display.flip()
