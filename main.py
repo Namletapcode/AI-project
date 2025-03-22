@@ -75,7 +75,7 @@ class Game:
         pygame.display.flip()
 
         bullet_data = self.get_all_bullets_info()
-        print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
+        # print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
     def show_game_over_screen(self):
        font = pygame.font.Font(None, 74)
        text = font.render("Game Over", True, (255, 0, 0))
