@@ -32,7 +32,10 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-    
+
+
+    def restart_game(self):
+        self.__init__()
     def get_all_bullets_info(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullet_manager.bullets]
 
@@ -89,15 +92,22 @@ class Game:
         pygame.display.flip()
 
         bullet_data = self.get_all_bullets_info()
-        #print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
+        # print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
+    def show_game_over_screen(self):
+       font = pygame.font.Font(None, 74)
+       text = font.render("Game Over", True, (255, 0, 0))
+       text_rect = text.get_rect(center=(self.settings.screen_width // 2, self.settings.screen_height // 2))
 
+       self.screen.fill((0, 0, 0))
+       self.screen.blit(text, text_rect)
+       pygame.display.flip()
+
+       time.sleep(2)  # Dừng game trong 2 giây
+       self.restart_game()
     def check_collision(self):
         for bullet in self.bullet_manager.bullets:
             distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
             if distance <= self.player.radius + bullet.radius:
-                print("Game Over")
-                pygame.quit()
-                sys.exit()
-
+                self.show_game_over_screen()
 game = Game()
 game.run()
