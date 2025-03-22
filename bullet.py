@@ -14,4 +14,4 @@ class Bullet:
         self.rect.y = self.y
 
     def draw(self):
-        pygame.draw.rect(self.screen, "yellow", self.rect)
+        pygame.draw.rect(self.screen, self.color, self.rect)

@@ -36,6 +36,18 @@ class Game:
     def get_all_bullets_info(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullet_manager.bullets]
 
+    def highlight_bullets_in_radius(self, d):
+        pygame.draw.circle(self.screen, (255, 255, 255), (int(self.player.x), int(self.player.y)), d, 1)
+        
+        bullets_in_radius = []
+        for bullet in self.bullet_manager.bullets:
+            distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
+            if distance <= d:
+                bullet.color = (255, 255, 0)  # Đổi màu đạn thành vàng
+                bullets_in_radius.append(bullet)
+        
+        return bullets_in_radius
+
     def update_screen(self):
         self.screen.fill((0, 0, 0))
         box_x, box_y, box_size = self.settings.screen_width // 2, self.settings.screen_height // 2, 500
@@ -65,14 +77,19 @@ class Game:
             self.bullet_manager.create_targeted_shot(self.player.x, self.player.y, speed=4)
         
         self.bullet_manager.update()
+
+        bullets_near_player = self.highlight_bullets_in_radius(100)  # Ví dụ dùng bán kính 100
+        print([ b for b in bullets_near_player ])  # In tọa độ các viên đạn trong bán kính
+
         self.bullet_manager.draw(self.screen)
         self.check_collision()
         self.group.update(self.dt)
         self.group.draw(self.screen)
+
         pygame.display.flip()
 
         bullet_data = self.get_all_bullets_info()
-        print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
+        #print(bullet_data)  # In ra danh sách tọa độ và góc của tất cả đạn
 
     def check_collision(self):
         for bullet in self.bullet_manager.bullets:
