@@ -51,6 +51,18 @@ class Game:
         
         return bullets_in_radius
 
+    def highlight_bullets_in_radius(self, d):
+        pygame.draw.circle(self.screen, (255, 255, 255), (int(self.player.x), int(self.player.y)), d, 1)
+        
+        bullets_in_radius = []
+        for bullet in self.bullet_manager.bullets:
+            distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
+            if distance <= d:
+                bullet.color = (255, 255, 0)  # Đổi màu đạn thành vàng
+                bullets_in_radius.append(bullet)
+        
+        return bullets_in_radius
+
     def update_screen(self):
         self.screen.fill((0, 0, 0))
         box_x, box_y, box_size = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 500
@@ -88,6 +100,7 @@ class Game:
         self.check_collision()
         self.group.update(self.dt)
         self.group.draw(self.screen)
+
         pygame.display.flip()
     def show_game_over_screen(self):
         font = pygame.font.Font(None, 74)
