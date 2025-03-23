@@ -1,6 +1,6 @@
 import pygame
 import math
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_BULLET_RADIUS
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, angle, speed, fade=0, color=(255, 255, 255), bouncing=False, from_corner=False):
@@ -13,13 +13,14 @@ class Bullet(pygame.sprite.Sprite):
         self.color = color
         self.bouncing = bouncing
         self.from_corner = from_corner
-        self.radius = 5
+        self.radius = DEFAULT_BULLET_RADIUS
         self.alpha = 255 if fade else None
         self.image = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
         self.image.fill((0, 0, 0, 0))
         pygame.draw.circle(self.image, self.color + (self.alpha if self.alpha else 255,), (self.radius, self.radius), self.radius)
 
     def update(self):
+        # inefficient duo to constantly re-calculating sine and cosine
         self.x += math.cos(self.angle) * self.speed
         self.y += math.sin(self.angle) * self.speed
         

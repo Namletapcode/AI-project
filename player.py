@@ -4,9 +4,13 @@ from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from main import Game
+    from game import Game
     
 class Player(pygame.sprite.Sprite):
+
+    # optimize
+    SQRT_2 = math.sqrt(2)
+
     def __init__(self, game: "Game"):
         super().__init__() #kế thừa lớp con từ lớp cha
         self.screen = game.screen
@@ -16,7 +20,7 @@ class Player(pygame.sprite.Sprite):
         self.bullets = pygame.sprite.Group()
         self.radius = 5
         self.x = SCREEN_WIDTH // 2
-        self.y = SCREEN_HEIGHT - 100
+        self.y = SCREEN_HEIGHT // 2
         
     def draw_player(self):
         pygame.draw.circle(self.screen, (255,0,0), (self.x,self.y), self.radius)
@@ -49,8 +53,8 @@ class Player(pygame.sprite.Sprite):
   
     def move(self):
         if self.direction.x and self.direction.y:
-            self.x += self.direction.x * PLAYER_SPEED / math.sqrt(2)
-            self.y += self.direction.y * PLAYER_SPEED / math.sqrt(2)
+            self.x += self.direction.x * PLAYER_SPEED / self.SQRT_2
+            self.y += self.direction.y * PLAYER_SPEED / self.SQRT_2
         else:
             self.x += self.direction.x * PLAYER_SPEED
             self.y += self.direction.y * PLAYER_SPEED
