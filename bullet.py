@@ -20,7 +20,7 @@ class Bullet(pygame.sprite.Sprite):
         pygame.draw.circle(self.image, self.color + (self.alpha if self.alpha else 255,), (self.radius, self.radius), self.radius)
 
     def update(self):
-        # inefficient duo to constantly re-calculating sine and cosine
+        # inefficient due to constantly re-calculating sine and cosine
         self.x += math.cos(self.angle) * self.speed
         self.y += math.sin(self.angle) * self.speed
         

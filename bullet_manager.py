@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import numpy as np
 from settings import *
 from bullet import Bullet
 from player import Player
@@ -12,6 +13,61 @@ class BulletManager:
         self.angle_offset = 0
         self.radius = 5
         self.player = player
+
+    def get_state(self) -> np.ndarray:
+        """
+        Returns a numpy array of shape (12, 1), representing the player's surroundings.
+    
+        Format:
+        - First 8 indices represent bullets in the 8 surrounding regions.
+        - Last 4 indices represent proximity to the box boundaries.
+    
+        Index Mapping:
+            0: Up
+            1: Right
+            2: Down
+            3: Left
+            4: Up-Right
+            5: Down-Right
+            6: Down-Left
+            7: Up-Left
+            8: Near top of box
+            9: Near right of box
+            10: Near bottom of box
+            11: Near left of box
+        """
+        result = np.zeros((12, ), dtype=np.float64)
+        close_distance = 15
+        square_close_distance = 225
+        for bullet in self.bullets:
+            if (self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2 < square_close_distance:
+                angle = math.atan2(bullet.y - self.player.y, bullet.x - self.player.x)
+                angle = math.degrees(angle)
+                if angle > -157.5 and angle <= -112.5:
+                    result[6] = 1
+                elif angle > -112.5 and angle <= -67.5:
+                    result[2] = 1
+                elif angle > -67.5 and angle <= -22.5:
+                    result[5] = 1
+                elif angle > -22.5 and angle <= 22.5:
+                    result[1] = 1
+                elif angle > 22.5 and angle <= 67.5:
+                    result[4] = 1
+                elif angle > 67.5 and angle <= 112.5:
+                    result[0] = 1
+                elif angle > 112.5 and angle <= 157.5:
+                    result[7] = 1
+                else:
+                    result[3] = 1
+        if self.player.y - BOX_TOP < close_distance:
+            result[8] = 1
+        if BOX_LEFT + BOX_SIZE - self.player.x < close_distance:
+            result[9] = 1
+        if BOX_TOP + BOX_SIZE - self.player.y < close_distance:
+            result[10] = 1
+        if self.player.x - BOX_LEFT < close_distance:
+            result[11] = 1
+        return result.reshape(12, 1)
 
     def spawn_random_bullet_pattern(self):
         if pygame.time.get_ticks() % 100 == 0:

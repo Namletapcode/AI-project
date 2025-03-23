@@ -2,9 +2,10 @@ import pygame
 import sys
 from bullet_manager import BulletManager
 from player import Player
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
 import math
 import threading
+import numpy as np
 
 class Game:
     def __init__(self):
@@ -19,13 +20,18 @@ class Game:
     def run(self):
         while True:
             self.dt = min(self.clock.tick(FPS) / 1000, dt_max)
-            self.check_events()
             self.update_screen()
 
-    def manual_run(self): # for AI agent
+    def take_action(self, action: np.ndarray): # for AI agent
         self.dt = min(self.clock.tick(FPS) / 1000, dt_max)
-        self.check_events()
-        self.update_screen()
+        self.update(action)
+        self.draw()
+
+    def get_state(self) -> np.ndarray:
+        return self.bullet_manager.get_state()
+    
+    def get_reward(self) -> tuple[float, bool]:
+        return self.reward if not self.game_over else -10, self.game_over
 
     def run_in_another_thread(self):    # tạm thời không di chuyển được nếu chạy song luồng
         new_thread = threading.Thread(target=self.run, daemon=True)
@@ -42,8 +48,9 @@ class Game:
         self.player = Player(self)
         self.bullet_manager = BulletManager(self.player)
         self.enemy_x, self.enemy_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
-        # self.hit = False
         self.frame_index = 0
+        self.reward = 0.1
+        self.game_over = False
 
     def get_all_bullets_info(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullet_manager.bullets]
@@ -73,47 +80,39 @@ class Game:
                 bullets_in_radius.append(bullet)
         
         return bullets_in_radius"""
+    
+    def update(self, action: np.ndarray = None):
+        # update logic
+        if not self.game_over:
+            self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
+            self.player.update_player(action)
+            self.bullet_manager.update()
+            self.check_collision()
+            self.group.update(self.dt)
+        else:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_RETURN]:
+                self.game_over = False
+                self.restart_game()
+
+    def draw(self):
+        # re-draw screen
+        self.check_events()
+        self.screen.fill((0, 0, 0))
+        self.draw_box()
+        self.player.draw_player()
+        self.bullet_manager.draw(self.screen)
+        self.group.draw(self.screen)
+        pygame.display.flip()
+        print(self.get_reward())
+
+    def draw_box(self):
+        pygame.draw.rect(self.screen, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)
 
     def update_screen(self):
-        self.screen.fill((0, 0, 0))
-        box_x, box_y, box_size = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 500
-        pygame.draw.rect(self.screen, (255, 255, 255), 
-                     (box_x - box_size // 2, box_y - box_size // 2, box_size, box_size), 2)
-        self.player.update_player()
-        self.player.draw_player()
-        self.player.handle_screen_collision()
-        
-        # moved below part into a function in bullet manager
-        """if pygame.time.get_ticks() % 100 == 0:
-            self.bullet_manager.create_ring()
-        if pygame.time.get_ticks() % 151 == 0:
-            self.bullet_manager.create_rotating_ring()
-        if pygame.time.get_ticks() % 199 == 0:
-            self.bullet_manager.create_spiral()
-        if pygame.time.get_ticks() % 237 == 0:
-            self.bullet_manager.create_wave()
-        #if pygame.time.get_ticks() % 300 == 0:
-           # self.bullet_manager.create_negative_speed_spiral(num_bullets=36, speed=-3, rotation_speed=5)
-        if pygame.time.get_ticks() % 367 == 0:
-            self.bullet_manager.create_expanding_spiral()
-        if pygame.time.get_ticks() % 403 == 0:
-            self.bullet_manager.create_bouncing_bullets()
-        if pygame.time.get_ticks() % 450 == 0:
-            self.bullet_manager.create_spiral_from_corners()
-        if pygame.time.get_ticks() % 100 == 0:
-            self.bullet_manager.create_targeted_shot(self.player.x, self.player.y, speed=4)"""
-        
-        self.bullet_manager.update()
-        
-        # bullets_near_player = self.highlight_bullets_in_radius(100)  # Ví dụ dùng bán kính 100
-        # print(len(bullets_near_player))
-        
-        self.bullet_manager.draw(self.screen)
-        self.check_collision()
-        self.group.update(self.dt)
-        self.group.draw(self.screen)
-
-        pygame.display.flip()
+        # main user update funtion!
+        self.update()
+        self.draw()
 
     def show_game_over_screen(self):
         font = pygame.font.Font(None, 74)
@@ -128,7 +127,9 @@ class Game:
         self.restart_game()
 
     def check_collision(self):
+        # if colision restart game
         for bullet in self.bullet_manager.bullets:
             distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
             if distance <= self.player.radius + bullet.radius:
-                self.show_game_over_screen()
+                self.game_over = True
+                break

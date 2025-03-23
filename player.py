@@ -1,6 +1,7 @@
 import pygame
 import math
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED
+import numpy as np
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -13,6 +14,7 @@ class Player(pygame.sprite.Sprite):
 
     def __init__(self, game: "Game"):
         super().__init__() #kế thừa lớp con từ lớp cha
+        self.game = game
         self.screen = game.screen
         self.screen_rect = game.screen_rect
         # self.rect = pygame.Rect(self.settings.screen_width//2,self.settings.screen_height-40,30,30)
@@ -25,9 +27,8 @@ class Player(pygame.sprite.Sprite):
     def draw_player(self):
         pygame.draw.circle(self.screen, (255,0,0), (self.x,self.y), self.radius)
 
-    def update_player(self):
-        self.input()
-        self.move()
+    def update_player(self, action: np.ndarray = None):
+        self.move(action)
     
     def move_left(self):
         self.direction.x = -1
@@ -51,7 +52,28 @@ class Player(pygame.sprite.Sprite):
             self.direction.y = 1
         else: self.direction.y = 0
   
-    def move(self):
+    def move(self, action: np.ndarray = None):
+        if not action:
+            # user keyboard input
+            self.input()
+        else:
+            # AI input
+            if action[0] or action[4] or action[7]:
+                self.direction.y = -1
+            elif action[2] or action[5] or action[6]:
+                self.direction.y = 1
+            else:
+                self.direction.y = 0
+            if action[1] or action[4] or action[5]:
+                self.direction.x = 1
+            elif action[3] or action[6] or action[7]:
+                self.direction.x = -1
+            else:
+                self.direction.x = 0
+
+        if self.direction.x or self.direction.y:
+            self.game.reward = 0
+
         if self.direction.x and self.direction.y:
             self.x += self.direction.x * PLAYER_SPEED / self.SQRT_2
             self.y += self.direction.y * PLAYER_SPEED / self.SQRT_2
@@ -59,21 +81,15 @@ class Player(pygame.sprite.Sprite):
             self.x += self.direction.x * PLAYER_SPEED
             self.y += self.direction.y * PLAYER_SPEED
 
+        self.handle_screen_collision()
+
     def handle_screen_collision(self):
-        """Ngăn hình tròn đi ra ngoài màn hình"""
-        if self.x - self.radius < 0:
-            self.x = self.radius  # Giữ trong giới hạn trái
-        if self.x + self.radius > SCREEN_WIDTH:
-            self.x = SCREEN_WIDTH - self.radius  # Giữ trong giới hạn phải
-        if self.y - self.radius < 0:
-            self.y = self.radius  # Giữ trong giới hạn trên
-        if self.y + self.radius > SCREEN_HEIGHT:
-            self.y = SCREEN_HEIGHT - self.radius
-        box_x, box_y, box_size = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 500
-        left = box_x - box_size // 2
-        right = box_x + box_size // 2
-        top = box_y - box_size // 2
-        bottom = box_y + box_size // 2
+        """Ngăn hình tròn đi ra ngoài hộp"""
+
+        left = BOX_LEFT
+        top = BOX_TOP
+        right = BOX_LEFT + BOX_SIZE
+        bottom = BOX_TOP + BOX_SIZE
 
         if self.x - self.radius < left:
            self.x = left + self.radius  
