@@ -2,6 +2,7 @@ import pygame
 import math
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from main import Game
     
@@ -19,6 +20,7 @@ class Player(pygame.sprite.Sprite):
         
     def draw_player(self):
         pygame.draw.circle(self.screen, (255,0,0), (self.x,self.y), self.radius)
+
     def update_player(self):
         self.input()
         self.move()
@@ -52,6 +54,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.x += self.direction.x * PLAYER_SPEED
             self.y += self.direction.y * PLAYER_SPEED
+
     def handle_screen_collision(self):
         """Ngăn hình tròn đi ra ngoài màn hình"""
         if self.x - self.radius < 0:

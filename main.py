@@ -5,6 +5,7 @@ from bullet_manager import BulletManager
 from player import Player
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max
 import math
+import threading
 
 class Game:
     def __init__(self):
@@ -25,7 +26,11 @@ class Game:
             self.dt = min(self.clock.tick(FPS) / 1000, dt_max)
             self.check_events()
             self.update_screen()
-        
+
+    def run_in_another_thread(self):    # tạm thời không di chuyển được nếu chạy song luồng
+        new_thread = threading.Thread(target=self.run, daemon=True)
+        new_thread.start()
+        new_thread.join()
 
     def check_events(self):
         for event in pygame.event.get():
@@ -36,6 +41,7 @@ class Game:
 
     def restart_game(self):
         self.__init__()
+
     def get_all_bullets_info(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullet_manager.bullets]
     
@@ -46,12 +52,14 @@ class Game:
         for bullet in self.bullet_manager.bullets:
             distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
             if distance <= d:
-                bullet.set_color((255, 255, 0))  # Đổi màu đạn thành vàng
+                bullet.set_color((255, 255, 0))     # Đổi màu đạn thành vàng
                 bullets_in_radius.append(bullet)
+            else:
+                bullet.set_color((255, 255, 255))   # Trở lại màu trắngtrắng
         
         return bullets_in_radius
 
-    def highlight_bullets_in_radius(self, d):
+    """def highlight_bullets_in_radius(self, d):
         pygame.draw.circle(self.screen, (255, 255, 255), (int(self.player.x), int(self.player.y)), d, 1)
         
         bullets_in_radius = []
@@ -61,7 +69,7 @@ class Game:
                 bullet.color = (255, 255, 0)  # Đổi màu đạn thành vàng
                 bullets_in_radius.append(bullet)
         
-        return bullets_in_radius
+        return bullets_in_radius"""
 
     def update_screen(self):
         self.screen.fill((0, 0, 0))
@@ -102,6 +110,7 @@ class Game:
         self.group.draw(self.screen)
 
         pygame.display.flip()
+
     def show_game_over_screen(self):
         font = pygame.font.Font(None, 74)
         text = font.render("Game Over", True, (255, 0, 0))
@@ -113,10 +122,16 @@ class Game:
 
         time.sleep(2)  # Dừng game trong 2 giây
         self.restart_game()
+
     def check_collision(self):
         for bullet in self.bullet_manager.bullets:
             distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
             if distance <= self.player.radius + bullet.radius:
                 self.show_game_over_screen()
-game = Game()
-game.run()
+
+
+if __name__ == '__main__':
+    game = Game()
+    game.run()
+    # game.run_in_another_thread()
+    print('This line of code is reached')   # debug: never with the old code (single thread)
