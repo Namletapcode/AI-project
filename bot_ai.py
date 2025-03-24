@@ -167,6 +167,23 @@ class GameBot:
             if list_move:
                 best_direction_index = random.choice(list_move)
                 self.draw_sector(self.screen, 50, best_direction_index, (0, 255, 0))
+        elif self.method == DodgeMethod.OPPOSITE_THREAT_DIRECTION:
+            sector_flags = self.classify_bullets_into_sectors(bullets_near_player)
+
+            # Tính tổng nguy hiểm của từng nhóm hướng (trái/phải, trên/dưới)
+            vertical_threat = sector_flags[5] + sector_flags[6] + sector_flags[7] - (sector_flags[1] + sector_flags[2] + sector_flags[3])
+            horizontal_threat = sector_flags[7] + sector_flags[0] + sector_flags[1] - (sector_flags[3] + sector_flags[4] + sector_flags[5])
+
+            # Xác định hướng di chuyển an toàn hơn
+            move_y = -1 if vertical_threat > 0 else (1 if vertical_threat < 0 else 0)
+            move_x = -1 if horizontal_threat > 0 else (1 if horizontal_threat < 0 else 0)
+            
+            best_direction_index = self.game.player.directions.index(pygame.Vector2(move_x, move_y))
+
+            # Vẽ hướng di chuyển
+            if best_direction_index != 8:
+                self.draw_sector(self.screen, 50, best_direction_index, (0, 255, 0))
+            
                 
         if self.action is not None:
             # Cập nhật self.action theo dạng One-Hot
