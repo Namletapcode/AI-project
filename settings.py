@@ -50,34 +50,34 @@ class BulletBase:
 
 class RingBullet(BulletBase):
     """Đạn vòng tròn."""
-    def __init__(self, num_bullets=24, speed=3, radius=DEFAULT_BULLET_RADIUS, color=GREEN):
+    def __init__(self, num_bullets=24, speed=DEFAULT_BULLET_SPEED, radius=DEFAULT_BULLET_RADIUS, color=GREEN):
         super().__init__(num_bullets, speed, radius, color)
 
 class BouncingBullet(BulletBase):
     """Đạn nảy."""
-    def __init__(self, num_bullets=10, speed=4, radius=DEFAULT_BULLET_RADIUS, color=BLUE):
+    def __init__(self, num_bullets=10, speed=DEFAULT_BULLET_SPEED, radius=DEFAULT_BULLET_RADIUS, color=BLUE):
         super().__init__(num_bullets, speed, radius, color)
         
 class RotatingRingBullet(BulletBase):
     """Đạn vòng tròn quay."""
-    def __init__(self, num_bullets=12, speed=3, rotation_speed=5, radius=DEFAULT_BULLET_RADIUS, color=YELLOW):
+    def __init__(self, num_bullets=12, speed=DEFAULT_BULLET_SPEED, rotation_speed=5, radius=DEFAULT_BULLET_RADIUS, color=YELLOW):
         super().__init__(num_bullets, speed, radius, color)
         self.rotation_speed = rotation_speed
 
 class SpiralBullet(BulletBase):
     """Đạn xoắn ốc."""
-    def __init__(self, num_bullets=36, speed=3, rotation_speed=5, radius=DEFAULT_BULLET_RADIUS, color=PURPLE):
+    def __init__(self, num_bullets=36, speed=DEFAULT_BULLET_SPEED, rotation_speed=5, radius=DEFAULT_BULLET_RADIUS, color=PURPLE):
         super().__init__(num_bullets, speed, radius, color)
         self.rotation_speed = rotation_speed
 
 class WaveBullet(BulletBase):
     """Đạn dạng sóng."""
-    def __init__(self, num_bullets=10, speed=3, wave_amplitude=30, radius=DEFAULT_BULLET_RADIUS, color=CYAN):
+    def __init__(self, num_bullets=10, speed=DEFAULT_BULLET_SPEED, wave_amplitude=30, radius=DEFAULT_BULLET_RADIUS, color=CYAN):
         super().__init__(num_bullets, speed, radius, color)
         self.wave_amplitude = wave_amplitude
 
 class ExpandingSpiralBullet(BulletBase):
     """Đạn xoắn ốc mở rộng."""
-    def __init__(self, num_bullets=36, speed=2, speed_increment=0.1, radius=DEFAULT_BULLET_RADIUS, color=MAGENTA):
+    def __init__(self, num_bullets=36, speed=DEFAULT_BULLET_SPEED, speed_increment=0.1, radius=DEFAULT_BULLET_RADIUS, color=MAGENTA):
         super().__init__(num_bullets, speed, radius, color)
         self.speed_increment = speed_increment

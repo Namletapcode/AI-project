@@ -64,6 +64,9 @@ class Player(pygame.sprite.Sprite):
         else:
             x = self.x + direction.x * PLAYER_SPEED
             y = self.y + direction.y * PLAYER_SPEED
+        
+        x, y = self.handle_screen_collision(x, y)
+
         return pygame.Vector2(x, y)
         
     def move(self, action: np.ndarray = None):
@@ -72,14 +75,13 @@ class Player(pygame.sprite.Sprite):
             self.input()
         else:
             self.set_movement_from_index(np.argmax(action))
+            
         if self.direction.x or self.direction.y:
             self.game.reward = 0
-        self.x = self.direction_to_position(self.direction).x
-        self.y = self.direction_to_position(self.direction).y
-            
-        self.handle_screen_collision()
+
+        self.x, self.y = self.direction_to_position(self.direction)
         
-    def handle_screen_collision(self):
+    def handle_screen_collision(self, x, y):
         """Ngăn hình tròn đi ra ngoài màn hình"""
             
         left = BOX_LEFT
@@ -87,11 +89,13 @@ class Player(pygame.sprite.Sprite):
         right = BOX_LEFT + BOX_SIZE
         bottom = BOX_TOP + BOX_SIZE
 
-        if self.x - self.radius < left:
-           self.x = left + self.radius  
-        if self.x + self.radius > right:
-           self.x = right - self.radius  
-        if self.y - self.radius < top:
-           self.y = top + self.radius  
-        if self.y + self.radius > bottom:
-           self.y = bottom - self.radius  
+        if x - self.radius < left:
+           x = left + self.radius  
+        if x + self.radius > right:
+           x = right - self.radius  
+        if y - self.radius < top:
+           y = top + self.radius  
+        if y + self.radius > bottom:
+           y = bottom - self.radius
+
+        return x, y

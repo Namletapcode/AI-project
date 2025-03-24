@@ -4,7 +4,7 @@ import random
 import numpy as np
 from PIL import Image, ImageDraw
 from typing import TYPE_CHECKING
-from settings import DodgeMethod, DrawSectorMethod, USE_BOT
+from settings import DodgeMethod, DrawSectorMethod, USE_BOT, BOX_LEFT, BOX_TOP, BOX_SIZE
 
 if TYPE_CHECKING:
     from game import Game
@@ -132,6 +132,8 @@ class GameBot:
         self.reset_action()
         if len(bullets_near_player) == 0:
             return 8
+        clear_action_into_wall: bool = False
+        close_range: int = 20
         if self.method == DodgeMethod.FURTHEST_SAFE_DIRECTION:
             # Đánh giá an toàn cho mỗi hướng
             safe_scores = []
@@ -142,6 +144,16 @@ class GameBot:
                     for bullet in bullets_near_player
                 )
                 safe_scores.append(safe_score)
+            # nếu có lọc hướng di chuyển đâm vào hộp
+            if clear_action_into_wall:
+                if self.game.player.x - BOX_LEFT < close_range:
+                    safe_scores[3] = safe_scores[4] = safe_scores[5] = 0
+                elif BOX_LEFT + BOX_SIZE - self.game.player.x < close_range:
+                    safe_scores[7] = safe_scores[0] = safe_scores[1] = 0
+                elif self.game.player.y - BOX_TOP < close_range:
+                    safe_scores[1] = safe_scores[2] = safe_scores[3] = 0
+                elif BOX_TOP + BOX_SIZE - self.game.player.y < close_range:
+                    safe_scores[5] = safe_scores[6] = safe_scores[7] = 0
             # Chọn hướng có điểm nguy hiểm thấp nhất
             best_direction_index = safe_scores.index(max(safe_scores))
             self.draw_sector(self.screen, 50, best_direction_index, (0, 255, 0))
@@ -155,6 +167,16 @@ class GameBot:
                     for bullet in bullets_near_player
                 )
                 danger_scores.append(danger_score)
+            # nếu có lọc hướng di chuyển đâm vào hộp
+            if clear_action_into_wall:
+                if self.game.player.x - BOX_LEFT < close_range:
+                    danger_scores[3] = danger_scores[4] = danger_scores[5] = float('inf')
+                if BOX_LEFT + BOX_SIZE - self.game.player.x < close_range:
+                    danger_scores[7] = danger_scores[0] = danger_scores[1] = float('inf')
+                if self.game.player.y - BOX_TOP < close_range:
+                    danger_scores[1] = danger_scores[2] = danger_scores[3] = float('inf')
+                if BOX_TOP + BOX_SIZE - self.game.player.y < close_range:
+                    danger_scores[5] = danger_scores[6] = danger_scores[7] = float('inf')
             # Chọn hướng có điểm nguy hiểm thấp nhất
             best_direction_index = danger_scores.index(min(danger_scores))
             self.draw_sector(self.screen, 50, best_direction_index, (0, 255, 0))
@@ -177,4 +199,4 @@ class GameBot:
         if USE_BOT:
             self.action[:] = 0
             self.action[-1] = 1 # phần tử cuối ứng với đứng yên gán mặc định bằng 1
-        else: self.actio = None
+        else: self.action = None

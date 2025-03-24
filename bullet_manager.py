@@ -23,14 +23,14 @@ class BulletManager:
         - Last 4 indices represent proximity to the box boundaries.
     
         Index Mapping:
-            0: Up
-            1: Right
-            2: Down
-            3: Left
-            4: Up-Right
-            5: Down-Right
-            6: Down-Left
-            7: Up-Left
+            0: Right
+            1: Up-Right
+            2: Up
+            3: Up-Left
+            4: Left
+            5: Down-Left
+            6: Down
+            7: Down_right
             8: Near top of box
             9: Near right of box
             10: Near bottom of box
@@ -44,21 +44,21 @@ class BulletManager:
                 angle = math.atan2(bullet.y - self.player.y, bullet.x - self.player.x)
                 angle = math.degrees(angle)
                 if angle > -157.5 and angle <= -112.5:
-                    result[6] = 1
-                elif angle > -112.5 and angle <= -67.5:
-                    result[2] = 1
-                elif angle > -67.5 and angle <= -22.5:
                     result[5] = 1
-                elif angle > -22.5 and angle <= 22.5:
-                    result[1] = 1
-                elif angle > 22.5 and angle <= 67.5:
-                    result[4] = 1
-                elif angle > 67.5 and angle <= 112.5:
-                    result[0] = 1
-                elif angle > 112.5 and angle <= 157.5:
+                elif angle > -112.5 and angle <= -67.5:
+                    result[6] = 1
+                elif angle > -67.5 and angle <= -22.5:
                     result[7] = 1
-                else:
+                elif angle > -22.5 and angle <= 22.5:
+                    result[0] = 1
+                elif angle > 22.5 and angle <= 67.5:
+                    result[1] = 1
+                elif angle > 67.5 and angle <= 112.5:
+                    result[2] = 1
+                elif angle > 112.5 and angle <= 157.5:
                     result[3] = 1
+                else:
+                    result[4] = 1
         if self.player.y - BOX_TOP < close_distance:
             result[8] = 1
         if BOX_LEFT + BOX_SIZE - self.player.x < close_distance:
@@ -161,8 +161,10 @@ class BulletManager:
         pygame.draw.circle(screen, (255, 255, 255), (int(self.player.x), int(self.player.y)), radius, 1)
         
         bullets_in_radius = []
+        radius = radius ** 2
         for bullet in self.bullets:
-            distance = math.sqrt((self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2)
+            # reduce sqrt calculation for more optimize
+            distance = (self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2
             if distance <= radius:
                 bullet.set_color((128, 0, 128))     # Đổi màu đạn thành tím
                 bullets_in_radius.append(bullet)
