@@ -78,8 +78,6 @@ class BulletManager:
             self.create_spiral()
         if pygame.time.get_ticks() % 237 == 0:
             self.create_wave()
-        #if pygame.time.get_ticks() % 300 == 0:
-           # self.bullet_manager.create_negative_speed_spiral(num_bullets=36, speed=-3, rotation_speed=5)
         if pygame.time.get_ticks() % 367 == 0:
             self.create_expanding_spiral()
         if pygame.time.get_ticks() % 403 == 0:
@@ -106,8 +104,8 @@ class BulletManager:
         base_angle = math.radians(self.angle_offset)
         angle_step = 2 * math.pi / SpiralBullet().num_bullets
         new_bullets = [Bullet(x, y, base_angle + i * angle_step, SpiralBullet().speed, SpiralBullet().radius, fade=SpiralBullet().fade, color=SpiralBullet().color) 
-                       for i in range(RingBullet().num_bullets)]
-        self.bullets.add(*new_bullets)  # Dùng add() với unpacking
+                       for i in range(SpiralBullet().num_bullets)]
+        self.bullets.add(*new_bullets)
         self.angle_offset += SpiralBullet().rotation_speed
     
     def create_targeted_shot(self, target_x, target_y, speed=4):
@@ -150,7 +148,7 @@ class BulletManager:
         base_angle = math.radians(self.angle_offset)
         angle_step = 2 * math.pi / SpiralBullet().num_bullets
         new_bullets = [Bullet(x, y, base_angle + i * angle_step, SpiralBullet().speed, SpiralBullet().radius, color=SpiralBullet().color)
-                       for i in range(RingBullet().num_bullets)]
+                       for i in range(SpiralBullet().num_bullets)]
         self.bullets.add(*new_bullets)
         self.angle_offset += SpiralBullet().rotation_speed
         

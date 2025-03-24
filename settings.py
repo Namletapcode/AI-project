@@ -15,6 +15,7 @@ class DodgeMethod(Enum):
     LEAST_DANGER_PATH = 0
     FURTHEST_SAFE_DIRECTION = 1
     RANDOM_SAFE_ZONE = 2
+    OPPOSITE_THREAT_DIRECTION = 3
 
 class DrawSectorMethod(Enum):
     USE_POLYGON = 0
@@ -24,8 +25,8 @@ class DrawSectorMethod(Enum):
 
 USE_BOT = True
 SCAN_RADIUS = 100
-DODGE_METHOD = DodgeMethod.LEAST_DANGER_PATH
-DRAW_SECTOR_METHOD = DrawSectorMethod.USE_TRIANGLE
+DODGE_METHOD = DodgeMethod.OPPOSITE_THREAT_DIRECTION
+DRAW_SECTOR_METHOD = DrawSectorMethod.USE_POLYGON
 
 USE_BULLET_COLORS = False
 # Colors (R, G, B)
