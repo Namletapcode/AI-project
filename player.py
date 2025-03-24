@@ -1,36 +1,47 @@
 import pygame
 import math
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED
+import numpy as np
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from main import Game
+    from game import Game
     
 class Player(pygame.sprite.Sprite):
+    
+    # optimize
+    SQRT_2 = math.sqrt(2)
+    
     def __init__(self, game: "Game"):
         super().__init__() #kế thừa lớp con từ lớp cha
+        self.game = game
         self.screen = game.screen
         self.screen_rect = game.screen_rect
         # self.rect = pygame.Rect(self.settings.screen_width//2,self.settings.screen_height-40,30,30)
+        self.directions = [
+            pygame.Vector2(1, 0),   # Phải
+            pygame.Vector2(1, -1),  # Phải - Lên
+            pygame.Vector2(0, -1),  # Lên
+            pygame.Vector2(-1, -1), # Trái - Lên
+            pygame.Vector2(-1, 0),  # Trái
+            pygame.Vector2(-1, 1),  # Trái - Xuống
+            pygame.Vector2(0, 1),   # Xuống
+            pygame.Vector2(1, 1),    # Phải - Xuống
+            pygame.Vector2(0, 0)   # Đứng yên
+        ]
         self.direction = pygame.Vector2(0,0)
-        self.bullets = pygame.sprite.Group()
         self.radius = 5
+        self.speed = PLAYER_SPEED
         self.x = SCREEN_WIDTH // 2
-        self.y = SCREEN_HEIGHT - 100
+        self.y = SCREEN_HEIGHT // 2
         
-    def draw_player(self):
+    def draw(self):
         pygame.draw.circle(self.screen, (255,0,0), (self.x,self.y), self.radius)
-    def update_player(self):
-        self.input()
-        self.move()
-    
-    def move_left(self):
-        self.direction.x = -1
-    def move_right(self):
-        self.direction.x = 1
-    def move_up(self):
-        self.direction.y = -1
-    def move_down(self):
-        self.direction.y = 1
+        
+    def update(self, action: np.ndarray = None):
+        self.move(action)
+        
+    def set_movement_from_index(self, action: int):
+        self.direction = self.directions[action]
     
     def input(self):
         keys = pygame.key.get_pressed()
@@ -44,29 +55,36 @@ class Player(pygame.sprite.Sprite):
         elif keys[pygame.K_DOWN]:
             self.direction.y = 1
         else: self.direction.y = 0
-  
-    def move(self):
-        if self.direction.x and self.direction.y:
-            self.x += self.direction.x * PLAYER_SPEED / math.sqrt(2)
-            self.y += self.direction.y * PLAYER_SPEED / math.sqrt(2)
+        
+    def direction_to_position(self, direction: pygame.Vector2) -> pygame.Vector2:
+        if direction.x and direction.y:
+            x = self.x + direction.x * PLAYER_SPEED / self.SQRT_2
+            y = self.y + direction.y * PLAYER_SPEED / self.SQRT_2
         else:
-            self.x += self.direction.x * PLAYER_SPEED
-            self.y += self.direction.y * PLAYER_SPEED
+            x = self.x + direction.x * PLAYER_SPEED
+            y = self.y + direction.y * PLAYER_SPEED
+        return pygame.Vector2(x, y)
+        
+    def move(self, action: np.ndarray = None):
+        if action is None:
+            # user keyboard input
+            self.input()
+        else:
+            self.set_movement_from_index(np.argmax(action))
+        if self.direction.x or self.direction.y:
+            self.game.reward = 0
+        self.x = self.direction_to_position(self.direction).x
+        self.y = self.direction_to_position(self.direction).y
+            
+        self.handle_screen_collision()
+        
     def handle_screen_collision(self):
         """Ngăn hình tròn đi ra ngoài màn hình"""
-        if self.x - self.radius < 0:
-            self.x = self.radius  # Giữ trong giới hạn trái
-        if self.x + self.radius > SCREEN_WIDTH:
-            self.x = SCREEN_WIDTH - self.radius  # Giữ trong giới hạn phải
-        if self.y - self.radius < 0:
-            self.y = self.radius  # Giữ trong giới hạn trên
-        if self.y + self.radius > SCREEN_HEIGHT:
-            self.y = SCREEN_HEIGHT - self.radius
-        box_x, box_y, box_size = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 500
-        left = box_x - box_size // 2
-        right = box_x + box_size // 2
-        top = box_y - box_size // 2
-        bottom = box_y + box_size // 2
+            
+        left = BOX_LEFT
+        top = BOX_TOP
+        right = BOX_LEFT + BOX_SIZE
+        bottom = BOX_TOP + BOX_SIZE
 
         if self.x - self.radius < left:
            self.x = left + self.radius  
