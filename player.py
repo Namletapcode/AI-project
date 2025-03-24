@@ -3,6 +3,7 @@ import math
 import numpy as np
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from game import Game
     
