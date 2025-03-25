@@ -5,7 +5,7 @@ SCREEN_HEIGHT = 650
 FPS = 60
 dt_max = 3 / FPS
 PLAYER_SPEED = 3
-DEFAULT_BULLET_SPEED = 2.5
+DEFAULT_BULLET_SPEED = 2
 DEFAULT_BULLET_RADIUS = 5
 BOX_SIZE = 500
 BOX_TOP = (SCREEN_HEIGHT - BOX_SIZE) / 2
@@ -23,9 +23,15 @@ class DrawSectorMethod(Enum):
     USE_TRIANGLE_AND_ARC = 2
     USE_PIL = 3
 
-USE_BOT = True
+AI_PLAYING = False
+
+USE_BOT = False
+BOT_ACTION = False # True if bot is allowed to take action : set by dev
+BOT_DRAW = True   # True if bot is allowed to draw : set by dev
+FILTER_MOVE_INTO_WALL = True
+WALL_CLOSE_RANGE = 15
 SCAN_RADIUS = 100
-DODGE_METHOD = DodgeMethod.OPPOSITE_THREAT_DIRECTION
+DODGE_METHOD = DodgeMethod.LEAST_DANGER_PATH
 DRAW_SECTOR_METHOD = DrawSectorMethod.USE_POLYGON
 
 USE_BULLET_COLORS = False

@@ -4,7 +4,7 @@ import math
 import threading
 import numpy as np
 from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE,
-                      DODGE_METHOD, DRAW_SECTOR_METHOD, SCAN_RADIUS, USE_BOT)
+                      DODGE_METHOD, USE_BOT, BOT_DRAW)
 from bullet_manager import BulletManager
 from player import Player
 from bot_ai import GameBot
@@ -58,6 +58,7 @@ class Game:
         # update logic
         if not self.game_over:
             self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
+            self.bot.update()
             self.player.update(action)
             self.bullet_manager.update()
             self.check_collision()
@@ -72,9 +73,8 @@ class Game:
         self.check_events()
         self.screen.fill((0, 0, 0))
         self.draw_box()
-        if USE_BOT:
-            self.bot.draw_sectors(SCAN_RADIUS, 8, DRAW_SECTOR_METHOD)
-            self.bot.get_safe_action(SCAN_RADIUS)
+        if USE_BOT or BOT_DRAW:
+            self.bot.draw_vison()
         self.player.draw()
         self.bullet_manager.draw(self.screen)
         pygame.display.flip()
@@ -85,7 +85,7 @@ class Game:
 
     def update_screen(self):
         # main user update funtion!
-        self.update(self.bot.action if USE_BOT else None)
+        self.update(self.bot.action) #if USE_BOT or BOT_ACTION else None
         self.draw()
 
     def show_game_over_screen(self):

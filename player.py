@@ -1,7 +1,7 @@
 import pygame
 import math
 import numpy as np
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP, WALL_CLOSE_RANGE
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -37,8 +37,11 @@ class Player(pygame.sprite.Sprite):
         
     def draw(self):
         pygame.draw.circle(self.screen, (255,0,0), (self.x,self.y), self.radius)
+
+    def draw_surround_circle(self, radius: float):
+        pygame.draw.circle(self.screen, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
         
-    def update(self, action: np.ndarray = None):
+    def update(self, action: np.ndarray):
         self.move(action)
         
     def set_movement_from_index(self, action: int):
@@ -46,14 +49,14 @@ class Player(pygame.sprite.Sprite):
     
     def input(self):
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT]:
             self.direction.x = -1
-        elif keys[pygame.K_RIGHT]:
+        elif keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
             self.direction.x = 1
         else: self.direction.x = 0 
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
             self.direction.y = -1
-        elif keys[pygame.K_DOWN]:
+        elif keys[pygame.K_DOWN] and not keys[pygame.K_UP]:
             self.direction.y = 1
         else: self.direction.y = 0
         
@@ -69,8 +72,8 @@ class Player(pygame.sprite.Sprite):
 
         return pygame.Vector2(x, y)
         
-    def move(self, action: np.ndarray = None):
-        if action is None:
+    def move(self, action: np.ndarray):
+        if not self.game.bot.is_activate():
             # user keyboard input
             self.input()
         else:
@@ -99,3 +102,32 @@ class Player(pygame.sprite.Sprite):
            y = bottom - self.radius
 
         return x, y
+    
+    def get_near_wall_info(self):
+        """
+        Determines whether the player is near any of the four walls of the game area.
+
+        The function checks the player's proximity to each wall within a predefined range
+        (`WALL_CLOSE_RANGE`) and marks the corresponding direction as 1 if the player is close.
+
+        Returns:
+            list[int]: A list of four integers (0 or 1) representing proximity to walls:
+        
+        Index mapping:
+            0: Near top box boarder
+            1: Near right box boarder
+            2: Near bottom box boarder
+            3: Near left box boarder
+        """
+        result = [0] * 4
+
+        if self.y - BOX_TOP < WALL_CLOSE_RANGE:
+            result[0] = 1
+        if BOX_LEFT + BOX_SIZE - self.x < WALL_CLOSE_RANGE:
+            result[1] = 1
+        if BOX_TOP + BOX_SIZE - self.y < WALL_CLOSE_RANGE:
+            result[2] = 1
+        if self.x - BOX_LEFT < WALL_CLOSE_RANGE:
+            result[3] = 1
+
+        return result
