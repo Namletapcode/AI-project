@@ -1,8 +1,11 @@
 import pygame
 import math
 import numpy as np
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP, WALL_CLOSE_RANGE
+from collections import deque
+from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP,
+                      WALL_CLOSE_RANGE, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH)
 from typing import TYPE_CHECKING
+from help_methods import draw_water_drop
 
 if TYPE_CHECKING:
     from game import Game
@@ -31,12 +34,18 @@ class Player(pygame.sprite.Sprite):
         ]
         self.direction = pygame.Vector2(0,0)
         self.radius = 5
+        self.color = (255, 0, 0)
         self.speed = PLAYER_SPEED
         self.x = SCREEN_WIDTH // 2
         self.y = SCREEN_HEIGHT // 2
         
+        self.trail = deque(maxlen=TRAIL_MAX_LENGTH)  if DISPLAY_PLAYER_TRAIL else None
+        
     def draw(self):
-        pygame.draw.circle(self.screen, (255,0,0), (self.x,self.y), self.radius)
+        if DISPLAY_PLAYER_TRAIL:
+            self.trail.append((self.x, self.y))  # Lưu vị trí mới vào trail
+            draw_water_drop(self.screen, self)
+        pygame.draw.circle(self.screen, self.color, (self.x,self.y), self.radius)
 
     def draw_surround_circle(self, radius: float):
         pygame.draw.circle(self.screen, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)

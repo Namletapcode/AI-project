@@ -9,6 +9,11 @@ from player import Player
 class BulletManager:
     def __init__(self, player: "Player"):
         self.bullets = pygame.sprite.Group()
+        self.bullets.add(Bullet(BOX_LEFT, BOX_TOP, 0, 0, 0, RED))
+        self.bullets.add(Bullet(BOX_LEFT + BOX_SIZE, BOX_TOP , 0, 0, 0, RED))
+        self.bullets.add(Bullet(BOX_LEFT, BOX_TOP + BOX_SIZE, 0, 0, 0, RED))
+        self.bullets.add(Bullet(BOX_LEFT + BOX_SIZE, BOX_TOP + BOX_SIZE, 0, 0, 0, RED))
+        self.setup_timers()
         self.spawn_time = 0
         self.angle_offset = 0
         self.radius = 5
@@ -37,9 +42,8 @@ class BulletManager:
             11: Near left of box
         """
         result = np.zeros((12, ), dtype=np.float64)
-        close_distance = 15
         
-        close_bullets = self.get_bullet_in_range(close_distance)
+        close_bullets = self.get_bullet_in_range(WALL_CLOSE_RANGE)
         region_information = self.get_converted_regions(close_bullets)
         for i in range(len(region_information)):
             if region_information[i]:
@@ -54,24 +58,32 @@ class BulletManager:
                 result[i + 8] = 1
 
         return result.reshape(12, 1)
-
-    def spawn_random_bullet_pattern(self):
-        if pygame.time.get_ticks() % 100 == 0:
+    
+    def setup_timers(self):
+        pygame.time.set_timer(pygame.USEREVENT + 1, RingBullet().delay)   # create_ring
+        pygame.time.set_timer(pygame.USEREVENT + 2, RotatingRingBullet().delay)   # create_rotating_ring
+        pygame.time.set_timer(pygame.USEREVENT + 3, SpiralBullet().delay)   # create_spiral
+        pygame.time.set_timer(pygame.USEREVENT + 4, WaveBullet().delay)   # create_wave
+        pygame.time.set_timer(pygame.USEREVENT + 5, ExpandingSpiralBullet().delay)   # create_expanding_spiral
+        pygame.time.set_timer(pygame.USEREVENT + 6, BouncingBullet().delay)   # create_bouncing_bullets
+        pygame.time.set_timer(pygame.USEREVENT + 7, SpiralBullet().delay)   # create_spiral_from_corners
+        pygame.time.set_timer(pygame.USEREVENT + 8, RingBullet().delay)   # create_targeted_shot
+    
+    def spawn_random_bullet_pattern(self, event):
+        if event.type == pygame.USEREVENT + 1:
             self.create_ring()
-        if pygame.time.get_ticks() % 151 == 0:
+        elif event.type == pygame.USEREVENT + 2:
             self.create_rotating_ring()
-        if pygame.time.get_ticks() % 199 == 0:
+        elif event.type == pygame.USEREVENT + 3:
             self.create_spiral()
-        if pygame.time.get_ticks() % 237 == 0:
+        elif event.type == pygame.USEREVENT + 4:
             self.create_wave()
-        if pygame.time.get_ticks() % 367 == 0:
+        elif event.type == pygame.USEREVENT + 5:
             self.create_expanding_spiral()
-        if pygame.time.get_ticks() % 403 == 0:
+        elif event.type == pygame.USEREVENT + 6:
             self.create_bouncing_bullets()
-        if pygame.time.get_ticks() % 450 == 0:
-            self.create_spiral_from_corners()
-        if pygame.time.get_ticks() % 100 == 0:
-            self.create_targeted_shot(self.player.x, self.player.y, speed=DEFAULT_BULLET_SPEED)
+        elif event.type == pygame.USEREVENT + 7:
+            self.create_targeted_shot(self.player.x, self.player.y)
     
     def get_random_corner(self) -> tuple[int, int]:
         corners = [(0, 0), (SCREEN_WIDTH, 0), 
@@ -128,34 +140,9 @@ class BulletManager:
         new_bullets = [Bullet(x, y, i * angle_step, BouncingBullet().speed, BouncingBullet().radius, color=BouncingBullet().color, bouncing=True)
                        for i in range(RingBullet().num_bullets)]
         self.bullets.add(*new_bullets)
-    
-    def create_spiral_from_corners(self):
-        x, y = self.get_random_corner()
-        base_angle = math.radians(self.angle_offset)
-        angle_step = 2 * math.pi / SpiralBullet().num_bullets
-        new_bullets = [Bullet(x, y, base_angle + i * angle_step, SpiralBullet().speed, SpiralBullet().radius, color=SpiralBullet().color)
-                       for i in range(SpiralBullet().num_bullets)]
-        self.bullets.add(*new_bullets)
-        self.angle_offset += SpiralBullet().rotation_speed
         
     def get_bullets_detail(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullets]
-    
-    def bullets_in_radius(self, screen: pygame.Surface, radius: int) -> tuple: # temporally not in use
-        # pygame.draw.circle(screen, (255, 255, 255), (int(self.player.x), int(self.player.y)), radius, 1) moved into player.py
-        
-        bullets_in_radius = []
-        radius = radius ** 2
-        for bullet in self.bullets:
-            # reduce sqrt calculation for more optimize
-            distance = (self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2
-            if distance <= radius:
-                bullet.set_color((128, 0, 128))     # Đổi màu đạn thành tím
-                bullets_in_radius.append(bullet)
-            else:
-                bullet.set_color(bullet.origin_color)   # Trở lại màu mặc định
-        
-        return bullets_in_radius
     
     def color_in_radius(self, radius = None, color = None):
         if not radius or not color:
@@ -190,7 +177,7 @@ class BulletManager:
 
         return bullets
     
-    def get_converted_regions(self, bullets: list[Bullet]) -> list[float]:
+    def get_converted_regions(self, bullets: list[Bullet], num_sectors: int = 8) -> list[float]:
         """
         Converts bullet positions into an 8-region representation based on their angle 
         relative to the player.
@@ -214,32 +201,24 @@ class BulletManager:
             6: Down
             7: Down_right
         """
-        result = [0] * 8
+        sector_flags = [0] * num_sectors
+        sector_angle = 2 * math.pi / num_sectors  # Góc mỗi nan quạt
+        start_angle = -sector_angle / 2
 
         for bullet in bullets:
-            angle = math.atan2(bullet.y - self.player.y, bullet.x - self.player.x)
-            angle = math.degrees(angle)
-            if -157.5 < angle <= -112.5:
-                result[3] = 1
-            elif -112.5 < angle <= -67.5:
-                result[2] = 1
-            elif -67.5 < angle <= -22.5:
-                result[1] = 1
-            elif -22.5 < angle <= 22.5:
-                result[0] = 1
-            elif 22.5 < angle <= 67.5:
-                result[7] = 1
-            elif 67.5 < angle <= 112.5:
-                result[6] = 1
-            elif 112.5 < angle <= 157.5:
-                result[5] = 1
-            else:
-                result[4] = 1
+            # Tính góc của viên đạn so với nhân vật
+            angle = math.atan2(self.player.y - bullet.y, bullet.x - self.player.x)
 
-        return result
+            # Chỉnh lại góc về phạm vi [0, 360)
+            angle = (angle - start_angle) % (2 * math.pi)
+
+            # Xác định nan quạt nào chứa viên đạn
+            sector_index = int(angle // sector_angle)
+            sector_flags[sector_index] = 1
+
+        return sector_flags
 
     def update(self):
-        self.spawn_random_bullet_pattern()
         self.bullets.update()
         for bullet in self.bullets.copy():  # Lọc đạn ra ngoài màn hình
             if bullet.x < 0 or bullet.x > SCREEN_WIDTH or bullet.y < 0 or bullet.y > SCREEN_HEIGHT:

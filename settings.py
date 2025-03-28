@@ -23,16 +23,18 @@ class DrawSectorMethod(Enum):
     USE_TRIANGLE_AND_ARC = 2
     USE_PIL = 3
 
-AI_PLAYING = False
-
-USE_BOT = False
-BOT_ACTION = False # True if bot is allowed to take action : set by dev
-BOT_DRAW = True   # True if bot is allowed to draw : set by dev
+BOT_ACTION = True # True if bot is allowed to take action : set by dev
+BOT_DRAW = False # True if bot is allowed to draw : set by dev
 FILTER_MOVE_INTO_WALL = True
 WALL_CLOSE_RANGE = 15
 SCAN_RADIUS = 100
 DODGE_METHOD = DodgeMethod.LEAST_DANGER_PATH
 DRAW_SECTOR_METHOD = DrawSectorMethod.USE_POLYGON
+
+# Cấu hình vệt mờ
+DISPLAY_PLAYER_TRAIL = True
+DISPLAY_BULLET_TRAIL = False
+TRAIL_MAX_LENGTH = 10  # Giới hạn số điểm lưu trong vệt mờ
 
 USE_BULLET_COLORS = False
 # Colors (R, G, B)
@@ -48,43 +50,84 @@ MAGENTA = (255, 0, 255)
 
 class BulletBase:
     """Lớp cơ sở cho tất cả loại đạn."""
-    def __init__(self, num_bullets, speed, radius=DEFAULT_BULLET_RADIUS, color=WHITE, fade=0):
+    def __init__(self,
+                 num_bullets,
+                 speed,
+                 delay,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=WHITE,
+                 fade=0):
         self.num_bullets = num_bullets
         self.speed = speed
+        self.delay = delay
         self.radius = radius
         self.color = color
         self.fade = fade
 
 class RingBullet(BulletBase):
     """Đạn vòng tròn."""
-    def __init__(self, num_bullets=24, speed=DEFAULT_BULLET_SPEED, radius=DEFAULT_BULLET_RADIUS, color=GREEN):
-        super().__init__(num_bullets, speed, radius, color)
-
-class BouncingBullet(BulletBase):
-    """Đạn nảy."""
-    def __init__(self, num_bullets=10, speed=DEFAULT_BULLET_SPEED, radius=DEFAULT_BULLET_RADIUS, color=BLUE):
-        super().__init__(num_bullets, speed, radius, color)
+    def __init__(self,
+                 num_bullets=24,
+                 speed=DEFAULT_BULLET_SPEED,
+                 delay=1200,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=GREEN):
+        super().__init__(num_bullets, speed, delay, radius, color)
         
 class RotatingRingBullet(BulletBase):
     """Đạn vòng tròn quay."""
-    def __init__(self, num_bullets=12, speed=DEFAULT_BULLET_SPEED, rotation_speed=5, radius=DEFAULT_BULLET_RADIUS, color=YELLOW):
-        super().__init__(num_bullets, speed, radius, color)
+    def __init__(self,
+                 num_bullets=12,
+                 speed=DEFAULT_BULLET_SPEED,
+                 delay=2000,
+                 rotation_speed=5,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=YELLOW):
+        super().__init__(num_bullets, speed, delay, radius, color)
         self.rotation_speed = rotation_speed
+
+class BouncingBullet(BulletBase):
+    """Đạn nảy."""
+    def __init__(self,
+                 num_bullets=10,
+                 speed=DEFAULT_BULLET_SPEED,
+                 delay=2200,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=BLUE):
+        super().__init__(num_bullets, speed, delay, radius, color)
 
 class SpiralBullet(BulletBase):
     """Đạn xoắn ốc."""
-    def __init__(self, num_bullets=36, speed=DEFAULT_BULLET_SPEED, rotation_speed=5, radius=DEFAULT_BULLET_RADIUS, color=PURPLE):
-        super().__init__(num_bullets, speed, radius, color)
+    def __init__(self,
+                 num_bullets=36,
+                 speed=DEFAULT_BULLET_SPEED,
+                 delay=2500,
+                 rotation_speed=5,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=PURPLE):
+        super().__init__(num_bullets, speed, delay, radius, color)
         self.rotation_speed = rotation_speed
 
 class WaveBullet(BulletBase):
     """Đạn dạng sóng."""
-    def __init__(self, num_bullets=10, speed=DEFAULT_BULLET_SPEED, wave_amplitude=30, radius=DEFAULT_BULLET_RADIUS, color=CYAN):
-        super().__init__(num_bullets, speed, radius, color)
+    def __init__(self,
+                 num_bullets=10,
+                 speed=DEFAULT_BULLET_SPEED,
+                 delay=1800,
+                 wave_amplitude=30,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=CYAN):
+        super().__init__(num_bullets, speed, delay, radius, color)
         self.wave_amplitude = wave_amplitude
 
 class ExpandingSpiralBullet(BulletBase):
     """Đạn xoắn ốc mở rộng."""
-    def __init__(self, num_bullets=36, speed=DEFAULT_BULLET_SPEED, speed_increment=0.1, radius=DEFAULT_BULLET_RADIUS, color=MAGENTA):
-        super().__init__(num_bullets, speed, radius, color)
+    def __init__(self,
+                 num_bullets=36,
+                 speed=DEFAULT_BULLET_SPEED,
+                 delay=3000,
+                 speed_increment=0.1,
+                 radius=DEFAULT_BULLET_RADIUS,
+                 color=MAGENTA):
+        super().__init__(num_bullets, speed, delay, radius, color)
         self.speed_increment = speed_increment

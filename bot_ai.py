@@ -2,9 +2,9 @@ import pygame
 import math
 import random
 import numpy as np
-from PIL import Image, ImageDraw
 from typing import TYPE_CHECKING
-from settings import DodgeMethod, DrawSectorMethod, USE_BOT, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS, DRAW_SECTOR_METHOD
+from settings import DodgeMethod, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS
+from help_methods import draw_sector
 
 if TYPE_CHECKING:
     from game import Game
@@ -17,83 +17,6 @@ class GameBot:
         self.bullets = self.game.bullet_manager.bullets
         self.screen = self.game.screen
         self.action = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1])  # if self.is_activate() else None
-
-    def draw_sector_use_PIL(self, surface: pygame.Surface, radius: int, from_angle:float, to_angle: float, color: tuple):
-        """Vẽ hình quạt (pieslice) bằng PIL rồi chuyển sang pygame."""
-        size = (radius * 2, radius * 2)  # Kích thước ảnh
-        image = Image.new("RGBA", size, (0, 0, 0, 0))  # Ảnh trong suốt
-        draw = ImageDraw.Draw(image)
-
-        # Vẽ hình quạt với PIL
-        bbox = (0, 0, size[0], size[1])
-        draw.pieslice(bbox, start=math.degrees(from_angle), end=math.degrees(to_angle), fill=color)
-
-        # Chuyển sang pygame
-        mode = image.mode
-        data = image.tobytes()
-        pygame_image = pygame.image.fromstring(data, image.size, mode)
-
-        # Blit hình quạt lên surface
-        surface.blit(pygame_image, (self.player.x - radius, self.player.y - radius))
-        
-    def draw_sector_use_polygon(self, surface: pygame.Surface, radius: int, from_angle:float, to_angle: float, color: tuple, segments: int = 5):
-        """
-        Vẽ hình quạt mượt bằng cách sử dụng polygon với nhiều điểm trên cung tròn.
-        
-        - surface: màn hình pygame
-        - center: (x, y) của nhân vật
-        - radius: bán kính hình quạt
-        - start_angle, end_angle: góc bắt đầu và kết thúc (độ)
-        - color: màu sắc (RGB)
-        - segments: cạnh trên cung tròn (tăng để mượt hơn)
-        """
-        points = [(self.player.x, self.player.y)]
-        for i in range(segments + 1):
-            angle = from_angle + (to_angle - from_angle) * (i / segments)
-            x = self.player.x + radius * math.cos(angle)
-            y = self.player.y - radius * math.sin(angle)
-            points.append((x, y))
-            # pygame.draw.line(surface, (255, 255, 255), (self.player.x, self.player.y), (x, y))
-        pygame.draw.polygon(surface, color, points)  # Vẽ hình quạt
-        
-    def draw_sector(self, surface, radius, index, color, num_sectors=8, draw_method = DrawSectorMethod.USE_POLYGON):
-        sector_angle = 2 * math.pi / num_sectors  # Góc của mỗi nan quạt
-        start_angle = -sector_angle / 2
-        from_angle = start_angle + index * sector_angle
-        to_angle = from_angle + sector_angle
-        if draw_method == DrawSectorMethod.USE_POLYGON:
-            self.draw_sector_use_polygon(surface, radius, from_angle, to_angle, color)
-            return
-        if draw_method == DrawSectorMethod.USE_TRIANGLE:
-            # Tính tọa độ hai điểm ngoài cung tròn
-            x1 = self.player.x + radius * math.cos(from_angle)
-            y1 = self.player.y - radius * math.sin(from_angle)
-            x2 = self.player.x + radius * math.cos(to_angle)
-            y2 = self.player.y - radius * math.sin(to_angle)
-
-            # Vẽ hình quạt bằng tam giác nối với tâm
-            points = [(self.player.x, self.player.y), (x1, y1), (x2, y2)]
-            pygame.draw.polygon(self.screen, color, points)
-            return
-        if draw_method == DrawSectorMethod.USE_TRIANGLE_AND_ARC:
-            # Tính tọa độ hai điểm ngoài cung tròn
-            x1 = self.player.x + radius * math.cos(from_angle)
-            y1 = self.player.y - radius * math.sin(from_angle)
-            x2 = self.player.x + radius * math.cos(to_angle)
-            y2 = self.player.y - radius * math.sin(to_angle)
-
-            # Vẽ hình quạt bằng tam giác nối với tâm
-            points = [(self.player.x, self.player.y), (x1, y1), (x2, y2)]
-            pygame.draw.polygon(self.screen, color, points)
-            
-            # Vùng chứa vòng tròn
-            arc_rect = pygame.Rect(self.player.x - radius, self.player.y - radius, 2 * radius, 2 * radius)
-            
-            pygame.draw.arc(self.screen, color, arc_rect, from_angle, to_angle, 5)                
-            return
-        if draw_method == DrawSectorMethod.USE_PIL:
-            self.draw_sector_use_PIL(self.screen, radius, from_angle, to_angle, color)
-            return
 
     def classify_bullets_into_sectors(self, bullets, num_sectors=8, start_angle=-math.pi/8) -> np.ndarray: # temporally not in use
         sector_flags = np.zeros(num_sectors)
@@ -112,7 +35,7 @@ class GameBot:
 
         return sector_flags
     
-    def draw_sectors(self, radius, num_sectors=None, draw_method = DrawSectorMethod.USE_POLYGON):
+    def draw_sectors(self, radius, num_sectors=None):
         if num_sectors is None:
             # Lấy danh sách đạn trong bán kính d
             bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
@@ -128,15 +51,15 @@ class GameBot:
                 
                 # Vẽ viền cung tròn
                 if sector_flags[i]:
-                    self.draw_sector(self.screen, radius, i, color, num_sectors, draw_method)
+                    draw_sector(self.screen, self.player.x, self.player.y, radius, i, color, num_sectors)
                     
     def draw_vison(self):
         self.player.draw_surround_circle(SCAN_RADIUS)
-        self.draw_sectors(SCAN_RADIUS, None, DRAW_SECTOR_METHOD)
+        self.draw_sectors(SCAN_RADIUS, None)
         self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128, 0, 128))
         best_direction_index = np.argmax(self.action)
         if best_direction_index != 8:
-            self.draw_sector(self.screen, 50, best_direction_index, (0, 255, 0))
+            draw_sector(self.screen, self.player.x, self.player.y, 50, best_direction_index, (0, 255, 0))
     
     def update(self):
         radius = SCAN_RADIUS
@@ -248,4 +171,4 @@ class GameBot:
         self.action[-1] = 1 # phần tử cuối ứng với đứng yên gán mặc định bằng 1
 
     def is_activate(self) -> bool:
-        return USE_BOT or BOT_ACTION
+        return BOT_ACTION

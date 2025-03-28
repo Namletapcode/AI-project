@@ -3,8 +3,7 @@ import sys
 import math
 import threading
 import numpy as np
-from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE,
-                      DODGE_METHOD, USE_BOT, BOT_DRAW)
+from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
 from bullet_manager import BulletManager
 from player import Player
 from bot_ai import GameBot
@@ -44,6 +43,7 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            self.bullet_manager.spawn_random_bullet_pattern(event)
 
     def restart_game(self):
         self.player = Player(self)
@@ -56,6 +56,7 @@ class Game:
     
     def update(self, action: np.ndarray = None):
         # update logic
+        self.check_events()
         if not self.game_over:
             self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
             self.bot.update()
@@ -70,10 +71,9 @@ class Game:
 
     def draw(self):
         # re-draw screen
-        self.check_events()
         self.screen.fill((0, 0, 0))
         self.draw_box()
-        if USE_BOT or BOT_DRAW:
+        if BOT_DRAW:
             self.bot.draw_vison()
         self.player.draw()
         self.bullet_manager.draw(self.screen)
@@ -85,7 +85,7 @@ class Game:
 
     def update_screen(self):
         # main user update funtion!
-        self.update(self.bot.action) #if USE_BOT or BOT_ACTION else None
+        self.update(self.bot.action) #if BOT_ACTION else None
         self.draw()
 
     def show_game_over_screen(self):

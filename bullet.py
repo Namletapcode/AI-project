@@ -1,9 +1,12 @@
 import pygame
 import math
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, USE_BULLET_COLORS
+from collections import deque
+from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, USE_BULLET_COLORS,
+                      DISPLAY_BULLET_TRAIL, TRAIL_MAX_LENGTH)
+from help_methods import draw_water_drop
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, angle, speed, radius, color, fade=0, bouncing=False, from_corner=False):
+    def __init__(self, x: int, y: int, angle: int, speed: int, radius: int, color, fade=0, bouncing=False, from_corner=False):
         super().__init__()
         self.x = x
         self.y = y
@@ -16,9 +19,8 @@ class Bullet(pygame.sprite.Sprite):
         self.from_corner = from_corner
         self.radius = radius
         self.alpha = 255 if fade else None
-        self.image = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
-        self.image.fill((0, 0, 0, 0))
-        pygame.draw.circle(self.image, self.color + (self.alpha if self.alpha else 255,), (self.radius, self.radius), self.radius)
+        
+        self.trail = deque(maxlen=TRAIL_MAX_LENGTH) if DISPLAY_BULLET_TRAIL else None
 
     def update(self):
         # inefficient due to constantly re-calculating sine and cosine
@@ -35,10 +37,11 @@ class Bullet(pygame.sprite.Sprite):
 
         if self.fade:
             self.alpha = max(0, self.alpha - self.fade)
-            self.image.fill((0, 0, 0, 0))
-            pygame.draw.circle(self.image, self.color + (self.alpha,), (self.radius, self.radius), self.radius)
 
     def draw(self, screen):
+        if DISPLAY_BULLET_TRAIL:
+            self.trail.append((self.x, self.y))
+            draw_water_drop(screen, self)
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
     
     def set_color(self, color):
