@@ -6,7 +6,7 @@ import numpy as np
 from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
 from bullet_manager import BulletManager
 from player import Player
-from bot_ai import GameBot
+from update_bot_ai import Update_bot_ai
 
 class Game:
     def __init__(self):
@@ -16,6 +16,7 @@ class Game:
         self.clock = pygame.time.Clock() 
         self.screen_rect = self.screen.get_rect()
         self.restart_game()
+        self.font=pygame.font.Font(None, 36)
     
     def run(self):
         while True:
@@ -51,9 +52,11 @@ class Game:
         self.enemy_x, self.enemy_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
         self.frame_index = 0
         self.reward = 0.1
-        self.bot = GameBot(self, DODGE_METHOD)
+        self.bot = Update_bot_ai(self, DODGE_METHOD)
         self.game_over = False
-    
+        self.score=0
+        self.start_time=pygame.time.get_ticks()
+
     def update(self, action: np.ndarray = None):
         # update logic
         self.check_events()
@@ -63,6 +66,8 @@ class Game:
             self.player.update(action)
             self.bullet_manager.update()
             self.check_collision()
+            self.score+=1
+            self.survival_time=(pygame.time.get_ticks()-self.start_time) // 1000
         else:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_RETURN]:
@@ -77,9 +82,13 @@ class Game:
             self.bot.draw_vison()
         self.player.draw()
         self.bullet_manager.draw(self.screen)
-        pygame.display.flip()
         # print(self.get_reward())
-
+        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
+        time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
+    
+        self.screen.blit(score_text, (10, 10))
+        self.screen.blit(time_text, (10, 40))
+        pygame.display.flip()
     def draw_box(self):
         pygame.draw.rect(self.screen, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)
 
