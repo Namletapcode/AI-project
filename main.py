@@ -82,7 +82,7 @@ class Game:
         self.bullet_manager.update()
 
         bullets_near_player = self.highlight_bullets_in_radius(100)  # Ví dụ dùng bán kính 100
-        print([ b for b in bullets_near_player ])  # In tọa độ các viên đạn trong bán kính
+        print([ b for b in bullets_near_player ])  # In tọa độ các viên đạn trong bán kínhd
 
         self.bullet_manager.draw(self.screen)
         self.check_collision()
