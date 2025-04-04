@@ -98,8 +98,7 @@ class Game:
         self.draw()
 
     def show_game_over_screen(self):
-        font = pygame.font.Font(None, 74)
-        text = font.render("Game Over", True, (255, 0, 0))
+        text = self.font.render("Game Over", True, (255, 0, 0))
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
         self.screen.fill((0, 0, 0))
