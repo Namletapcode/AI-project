@@ -35,7 +35,7 @@ WALL_PENALTY_BIAS = 0.01 #Hệ số ảnh hưởng (càng cao, bot càng "ghét 
 WALL_MARGIN = 30        # Khoảng cách từ tường bắt đầu tính penalty (ví dụ: dưới 50px tính là gần tường)
 
 SCAN_RADIUS = 100
-DODGE_METHOD = DodgeMethod.LEAST_DANGER_PATH
+DODGE_METHOD = DodgeMethod.LEAST_DANGER_PATH_ADVANCED
 DRAW_SECTOR_METHOD = DrawSectorMethod.USE_POLYGON
 
 # Cấu hình vệt mờ

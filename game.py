@@ -6,7 +6,7 @@ import numpy as np
 from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
 from bullet_manager import BulletManager
 from player import Player
-from update_bot_ai import Update_bot_ai
+from bot_ai import GameBot
 
 class Game:
     def __init__(self):
@@ -52,7 +52,7 @@ class Game:
         self.enemy_x, self.enemy_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
         self.frame_index = 0
         self.reward = 0.1
-        self.bot = Update_bot_ai(self, DODGE_METHOD)
+        self.bot = GameBot(self, DODGE_METHOD)
         self.game_over = False
         self.score=0
         self.start_time=pygame.time.get_ticks()

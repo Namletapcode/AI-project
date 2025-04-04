@@ -1,15 +1,11 @@
-
+import pygame
+import math
+import random
 import numpy as np
 from typing import TYPE_CHECKING
-<<<<<<< HEAD
-from draw_bot_ai import Draw_bot_ai
-from update_bot_ai import Update_bot_ai
-from settings import DodgeMethod, BOT_ACTION
-=======
 from settings import (DodgeMethod, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS,
-                      BOX_SIZE, BOX_LEFT, BOX_TOP, USE_WALL_PENALTY, WALL_PENALTY_BIAS, WALL_MARGIN)
+                      USE_WALL_PENALTY, WALL_PENALTY_BIAS, WALL_MARGIN, BOX_LEFT, BOX_SIZE, BOX_TOP)
 from help_methods import draw_sector
->>>>>>> 1f56e6c (feat(bot): add future bullet prediction and wall avoidance penalty)
 
 if TYPE_CHECKING:
     from game import Game
@@ -22,13 +18,56 @@ class GameBot:
         self.bullets = self.game.bullet_manager.bullets
         self.screen = self.game.screen
         self.action = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1])  # if self.is_activate() else None
-        self.draw = Draw_bot_ai(self)
-        self.update = Update_bot_ai(self)
-        
-<<<<<<< HEAD
+    def classify_bullets_into_sectors(self, bullets, num_sectors=8, start_angle=-math.pi/8) -> np.ndarray: # temporally not in use
+        sector_flags = np.zeros(num_sectors)
+        sector_angle = 2 * math.pi / num_sectors  # Góc mỗi nan quạt
+
+        for bullet in bullets:
+            # Tính góc của viên đạn so với nhân vật
+            angle = math.atan2(self.player.y - bullet.y, bullet.x - self.player.x)
+
+            # Chỉnh lại góc về phạm vi [0, 360)
+            angle = (angle - start_angle) % (2 * math.pi)
+
+            # Xác định nan quạt nào chứa viên đạn
+            sector_index = int(angle // sector_angle)
+            sector_flags[sector_index] = 1
+
+        return sector_flags
     
+    def draw_sectors(self, radius, num_sectors=None):
+        if num_sectors is None:
+            # Lấy danh sách đạn trong bán kính d
+            bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
+            
+            # Phân loại đạn vào các nan quạt
+            sector_flags = self.game.bullet_manager.get_converted_regions(bullets_in_radius)
+
+            num_sectors = len(sector_flags)
+
+            for i in range(num_sectors):
+                # Chọn màu: Vàng nếu có đạn, Trắng nếu không
+                color = (255, 255, 0) if sector_flags[i] else (255, 255, 255)
+                
+                # Vẽ viền cung tròn
+                if sector_flags[i]:
+                    draw_sector(self.screen, self.player.x, self.player.y, radius, i, color, num_sectors)
+                    
+    def draw_vison(self):
+        self.player.draw_surround_circle(SCAN_RADIUS)
+        self.draw_sectors(SCAN_RADIUS, None)
+        self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128, 0, 128))
+        best_direction_index = np.argmax(self.action)
+        if best_direction_index != 8:
+            draw_sector(self.screen, self.player.x, self.player.y, 50, best_direction_index, (0, 255, 0))
     
-=======
+    def update(self):
+        radius = SCAN_RADIUS
+        bullets_near_player = self.game.bullet_manager.get_bullet_in_range(radius)
+        self.reset_action()
+
+        if len(bullets_near_player) == 0:
+            return 8
         if self.method == DodgeMethod.FURTHEST_SAFE_DIRECTION:
             best_direction_index = self.furthest_safe(bullets_near_player)
 
@@ -220,4 +259,3 @@ class GameBot:
 
     def is_activate(self) -> bool:
         return BOT_ACTION
->>>>>>> 1f56e6c (feat(bot): add future bullet prediction and wall avoidance penalty)
