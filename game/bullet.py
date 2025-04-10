@@ -1,9 +1,9 @@
 import pygame
 import math
 from collections import deque
-from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, USE_BULLET_COLORS,
+from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, USE_BULLET_COLORS,
                       DISPLAY_BULLET_TRAIL, TRAIL_MAX_LENGTH)
-from help_methods import draw_water_drop
+from utils.draw_utils import draw_water_drop
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, angle: int, speed: int, radius: int, color, fade=0, bouncing=False, from_corner=False):

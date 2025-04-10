@@ -1,7 +1,7 @@
 from math import sin, cos, asin, sqrt, degrees, pi
 from PIL import Image, ImageDraw
 import pygame
-from settings import DrawSectorMethod, DRAW_SECTOR_METHOD
+from configs.game_config import DrawSectorMethod, DRAW_SECTOR_METHOD
 
 def draw_sector_use_PIL(surface: pygame.Surface, point_x: int, point_y: int, radius: int, from_angle:float, to_angle: float, color: tuple):
     """Vẽ hình quạt (pieslice) bằng PIL rồi chuyển sang pygame."""

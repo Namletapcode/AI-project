@@ -1,7 +1,7 @@
 import numpy as np
 import random
 from collections import deque
-from model import Model
+from agent_01.model import Model
 
 MAX_MEMORY = 100000
 MAX_SAMPLE_SIZE = 1000

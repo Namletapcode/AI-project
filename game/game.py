@@ -3,10 +3,10 @@ import sys
 import math
 import threading
 import numpy as np
-from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
-from bullet_manager import BulletManager
-from player import Player
-from bot_ai import GameBot
+from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
+from game.bullet_manager import BulletManager
+from game.player import Player
+from game.bot_ai import GameBot
 
 class Game:
     def __init__(self):

@@ -2,9 +2,9 @@ import pygame
 import math
 import random
 import numpy as np
-from settings import *
-from bullet import Bullet
-from player import Player
+from configs.game_config import *
+from game.bullet import Bullet
+from game.player import Player
 
 class BulletManager:
     def __init__(self, player: "Player"):

@@ -2,10 +2,10 @@ import pygame
 import math
 import numpy as np
 from collections import deque
-from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP,
+from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP,
                       WALL_CLOSE_RANGE, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH)
 from typing import TYPE_CHECKING
-from help_methods import draw_water_drop
+from utils.draw_utils import draw_water_drop
 
 if TYPE_CHECKING:
     from game import Game

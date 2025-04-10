@@ -3,9 +3,9 @@ import math
 import random
 import numpy as np
 from typing import TYPE_CHECKING
-from settings import (DodgeMethod, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS,
+from configs.game_config import (DodgeMethod, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS,
                       USE_WALL_PENALTY, WALL_PENALTY_BIAS, WALL_MARGIN, BOX_LEFT, BOX_SIZE, BOX_TOP)
-from help_methods import draw_sector
+from utils.draw_utils import draw_sector
 
 if TYPE_CHECKING:
     from game import Game
