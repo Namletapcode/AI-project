@@ -2,17 +2,14 @@ import pygame
 import math
 import random
 import numpy as np
-from configs.game_config import *
+from configs.game_config import BULLET_PATTERNS, SCREEN_HEIGHT, SCREEN_WIDTH, GAME_SPEED
+from configs.bot_config import WALL_CLOSE_RANGE
 from game.bullet import Bullet
 from game.player import Player
 
 class BulletManager:
     def __init__(self, player: "Player"):
         self.bullets = pygame.sprite.Group()
-        self.bullets.add(Bullet(BOX_LEFT, BOX_TOP, 0, 0, 0, RED))
-        self.bullets.add(Bullet(BOX_LEFT + BOX_SIZE, BOX_TOP , 0, 0, 0, RED))
-        self.bullets.add(Bullet(BOX_LEFT, BOX_TOP + BOX_SIZE, 0, 0, 0, RED))
-        self.bullets.add(Bullet(BOX_LEFT + BOX_SIZE, BOX_TOP + BOX_SIZE, 0, 0, 0, RED))
         self.setup_timers()
         self.spawn_time = 0
         self.angle_offset = 0
@@ -60,14 +57,15 @@ class BulletManager:
         return result.reshape(12, 1)
     
     def setup_timers(self):
-        pygame.time.set_timer(pygame.USEREVENT + 1, RingBullet().delay)   # create_ring
-        pygame.time.set_timer(pygame.USEREVENT + 2, RotatingRingBullet().delay)   # create_rotating_ring
-        pygame.time.set_timer(pygame.USEREVENT + 3, SpiralBullet().delay)   # create_spiral
-        pygame.time.set_timer(pygame.USEREVENT + 4, WaveBullet().delay)   # create_wave
-        pygame.time.set_timer(pygame.USEREVENT + 5, ExpandingSpiralBullet().delay)   # create_expanding_spiral
-        pygame.time.set_timer(pygame.USEREVENT + 6, BouncingBullet().delay)   # create_bouncing_bullets
-        pygame.time.set_timer(pygame.USEREVENT + 7, SpiralBullet().delay)   # create_spiral_from_corners
-        pygame.time.set_timer(pygame.USEREVENT + 8, RingBullet().delay)   # create_targeted_shot
+        INT_GAME_SPEED = int(GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 1, BULLET_PATTERNS["ring"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 2, BULLET_PATTERNS['rotating_ring'].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 3, BULLET_PATTERNS["spiral"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 4, BULLET_PATTERNS["wave"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 5, BULLET_PATTERNS["expanding_spiral"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 6, BULLET_PATTERNS["bouncing"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 7, BULLET_PATTERNS["spiral"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 8, BULLET_PATTERNS["ring"].delay//INT_GAME_SPEED)
     
     def spawn_random_bullet_pattern(self, event):
         if event.type == pygame.USEREVENT + 1:
@@ -92,53 +90,79 @@ class BulletManager:
     
     def create_ring(self):
         x, y = self.get_random_corner()
-        angle_step = 2 * math.pi / RingBullet().num_bullets
-        new_bullets = [Bullet(x, y, i * angle_step, RingBullet().speed, RingBullet().radius, color=RingBullet().color) 
-                       for i in range(RingBullet().num_bullets)]
+        pattern = BULLET_PATTERNS["ring"]
+        angle_step = 2 * math.pi / pattern.num_bullets
+        new_bullets = [
+            Bullet(x, y, i * angle_step, pattern.speed, pattern.radius, 
+                  color=pattern.color, fade=pattern.fade) 
+            for i in range(pattern.num_bullets)
+        ]
         self.bullets.add(*new_bullets)  # Dùng add() với unpacking
 
     def create_spiral(self):
         x, y = self.get_random_corner()
+        pattern = BULLET_PATTERNS["spiral"]
         base_angle = math.radians(self.angle_offset)
-        angle_step = 2 * math.pi / SpiralBullet().num_bullets
-        new_bullets = [Bullet(x, y, base_angle + i * angle_step, SpiralBullet().speed, SpiralBullet().radius, fade=SpiralBullet().fade, color=SpiralBullet().color) 
-                       for i in range(SpiralBullet().num_bullets)]
+        angle_step = 2 * math.pi / pattern.num_bullets
+        new_bullets = [
+            Bullet(x, y, base_angle + i * angle_step, pattern.speed, 
+                  pattern.radius, color=pattern.color, fade=pattern.fade)
+            for i in range(pattern.num_bullets)
+        ]
         self.bullets.add(*new_bullets)
-        self.angle_offset += SpiralBullet().rotation_speed
+        self.angle_offset += pattern.rotation_speed
     
-    def create_targeted_shot(self, target_x, target_y, speed=4):
+    def create_targeted_shot(self, target_x, target_y):
         x, y = self.get_random_corner()
+        pattern = BULLET_PATTERNS["ring"]
         angle = math.atan2(target_y - y, target_x - x)
-        self.bullets.add(Bullet(x, y, angle, speed, RingBullet().radius, RingBullet().color))
+        self.bullets.add(Bullet(x, y, angle, pattern.speed, pattern.radius, pattern.color))
     
     def create_rotating_ring(self):
         x, y = self.get_random_corner()
+        pattern = BULLET_PATTERNS["rotating_ring"]
         base_angle = math.radians(self.angle_offset)
-        angle_step = 2 * math.pi / RotatingRingBullet().num_bullets
-        new_bullets = [Bullet(x, y, base_angle + i * angle_step, RotatingRingBullet().speed, RotatingRingBullet().radius, fade=RotatingRingBullet().fade, color=RotatingRingBullet().color)
-                       for i in range(RingBullet().num_bullets)]
+        angle_step = 2 * math.pi / pattern.num_bullets
+        new_bullets = [
+            Bullet(x, y, base_angle + i * angle_step, pattern.speed,
+                  pattern.radius, color=pattern.color)
+            for i in range(pattern.num_bullets)
+        ]
         self.bullets.add(*new_bullets)
-        self.angle_offset += RotatingRingBullet().rotation_speed
+        self.angle_offset += pattern.rotation_speed
     
     def create_wave(self):
         x, y = self.get_random_corner()
-        angle_step = 2 * math.pi / WaveBullet().num_bullets
-        new_bullets = [Bullet(x, y, i * angle_step, WaveBullet().speed, WaveBullet().radius, color=WaveBullet().color)
-                       for i in range(RingBullet().num_bullets)]
+        pattern = BULLET_PATTERNS["wave"]
+        angle_step = 2 * math.pi / pattern.num_bullets
+        new_bullets = [
+            Bullet(x, y, i * angle_step, pattern.speed, pattern.radius,
+                  color=pattern.color, fade=pattern.fade)
+            for i in range(pattern.num_bullets)
+        ]
         self.bullets.add(*new_bullets)
     
     def create_expanding_spiral(self):
         x, y = self.get_random_corner()
-        angle_step = 2 * math.pi / ExpandingSpiralBullet().num_bullets
-        new_bullets = [Bullet(x, y, i * angle_step, ExpandingSpiralBullet().speed + i * ExpandingSpiralBullet().speed_increment, ExpandingSpiralBullet().radius, color=ExpandingSpiralBullet().color)
-                       for i in range(RingBullet().num_bullets)]
+        pattern = BULLET_PATTERNS["expanding_spiral"]
+        angle_step = 2 * math.pi / pattern.num_bullets
+        new_bullets = [
+            Bullet(x, y, i * angle_step, 
+                  pattern.speed + i * pattern.speed_increment,
+                  pattern.radius, color=pattern.color)
+            for i in range(pattern.num_bullets)
+        ]
         self.bullets.add(*new_bullets)
     
     def create_bouncing_bullets(self):
         x, y = self.get_random_corner()
-        angle_step = 2 * math.pi / BouncingBullet().num_bullets
-        new_bullets = [Bullet(x, y, i * angle_step, BouncingBullet().speed, BouncingBullet().radius, color=BouncingBullet().color, bouncing=True)
-                       for i in range(RingBullet().num_bullets)]
+        pattern = BULLET_PATTERNS["bouncing"]
+        angle_step = 2 * math.pi / pattern.num_bullets
+        new_bullets = [
+            Bullet(x, y, i * angle_step, pattern.speed, pattern.radius,
+                  color=pattern.color, bouncing=True)
+            for i in range(pattern.num_bullets)
+        ]
         self.bullets.add(*new_bullets)
         
     def get_bullets_detail(self):
@@ -166,16 +190,12 @@ class BulletManager:
         Returns:
             list[Bullet]: A list of bullets that are within the specified range.
         """
-        bullets = []
         start_radius_square: float = start_radius ** 2
         end_radius_square: float = end_radius ** 2
 
-        for bullet in self.bullets:
-            distance_square = (self.player.x - bullet.x) ** 2 + (self.player.y - bullet.y) ** 2
-            if start_radius_square <= distance_square <= end_radius_square:
-                bullets.append(bullet)
-
-        return bullets
+        return [bullet for bullet in self.bullets 
+            if start_radius_square <= (self.player.x - bullet.x) ** 2 + 
+               (self.player.y - bullet.y) ** 2 <= end_radius_square]
     
     def get_converted_regions(self, bullets: list[Bullet], num_sectors: int = 8) -> list[float]:
         """
@@ -218,11 +238,8 @@ class BulletManager:
 
         return sector_flags
 
-    def update(self):
-        self.bullets.update()
-        for bullet in self.bullets.copy():  # Lọc đạn ra ngoài màn hình
-            if bullet.x < 0 or bullet.x > SCREEN_WIDTH or bullet.y < 0 or bullet.y > SCREEN_HEIGHT:
-                self.bullets.remove(bullet)
+    def update(self, delta_time: float = 0.1/60000):
+        self.bullets.update(delta_time)
 
     def draw(self, screen):
         for bullet in self.bullets:

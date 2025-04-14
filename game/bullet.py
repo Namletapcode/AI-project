@@ -22,10 +22,10 @@ class Bullet(pygame.sprite.Sprite):
         
         self.trail = deque(maxlen=TRAIL_MAX_LENGTH) if DISPLAY_BULLET_TRAIL else None
 
-    def update(self):
+    def update(self, delta_time: float = 0.1/60000):
         # inefficient due to constantly re-calculating sine and cosine
-        self.x += math.cos(self.angle) * self.speed
-        self.y += math.sin(self.angle) * self.speed
+        self.x += math.cos(self.angle) * self.speed * delta_time
+        self.y += math.sin(self.angle) * self.speed * delta_time
         
         if self.bouncing:
             if self.x - self.radius <= 0 or self.x + self.radius >= SCREEN_WIDTH:
@@ -37,12 +37,17 @@ class Bullet(pygame.sprite.Sprite):
 
         if self.fade:
             self.alpha = max(0, self.alpha - self.fade)
+        if self.is_out_of_bounds():
+            self.kill()
 
     def draw(self, screen):
         if DISPLAY_BULLET_TRAIL:
             self.trail.append((self.x, self.y))
             draw_water_drop(screen, self)
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+        
+    def is_out_of_bounds(self):
+        return not (0 <= self.x <= SCREEN_WIDTH and 0 <= self.y <= SCREEN_HEIGHT)
     
     def set_color(self, color):
         self.color = color

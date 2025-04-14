@@ -3,10 +3,9 @@ import sys
 import math
 import threading
 import numpy as np
-from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
+from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE)
 from game.bullet_manager import BulletManager
 from game.player import Player
-from game.bot_ai import GameBot
 
 class Game:
     def __init__(self):
@@ -15,16 +14,18 @@ class Game:
         pygame.display.set_caption("Touhou")
         self.clock = pygame.time.Clock() 
         self.screen_rect = self.screen.get_rect()
+        self.player = Player(self.screen)
+        # self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
     
     def run(self):
         while True:
-            self.dt = min(self.clock.tick(FPS) / 1000, dt_max)
-            self.update_screen()
+            delta_time = min(self.clock.tick(FPS) / 1000, dt_max)
+            self.update(delta_time=delta_time)
+            self.draw()
 
     def take_action(self, action: np.ndarray): # for AI agent
-        self.dt = min(self.clock.tick(FPS) / 1000, dt_max)
         self.update(action)
         self.draw()
 
@@ -47,39 +48,39 @@ class Game:
             self.bullet_manager.spawn_random_bullet_pattern(event)
 
     def restart_game(self):
-        self.player = Player(self)
+        self.player.reset()
         self.bullet_manager = BulletManager(self.player)
         self.enemy_x, self.enemy_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
         self.frame_index = 0
         self.reward = 0.1
-        self.bot = GameBot(self, DODGE_METHOD)
         self.game_over = False
         self.score=0
         self.start_time=pygame.time.get_ticks()
 
-    def update(self, action: np.ndarray = None):
+    def update(self, action: np.ndarray = None, delta_time: float = 0.0):
         # update logic
         self.check_events()
         if not self.game_over:
             self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
-            self.bot.update()
-            self.player.update(action)
-            self.bullet_manager.update()
+            self.player.update(action, delta_time)
+            self.bullet_manager.update(delta_time)
             self.check_collision()
-            self.score+=1
-            self.survival_time=(pygame.time.get_ticks()-self.start_time) // 1000
+            self.score += 1
+            self.survival_time = (pygame.time.get_ticks() - self.start_time) // 1000
         else:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_RETURN]:
                 self.game_over = False
                 self.restart_game()
 
-    def draw(self):
+    def draw(self, draw_extra: callable = None):
         # re-draw screen
         self.screen.fill((0, 0, 0))
         self.draw_box()
-        if BOT_DRAW:
-            self.bot.draw_vison()
+        
+        if draw_extra:
+            draw_extra()
+            
         self.player.draw()
         self.bullet_manager.draw(self.screen)
         # print(self.get_reward())
@@ -91,11 +92,6 @@ class Game:
         pygame.display.flip()
     def draw_box(self):
         pygame.draw.rect(self.screen, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)
-
-    def update_screen(self):
-        # main user update funtion!
-        self.update(self.bot.action) #if BOT_ACTION else None
-        self.draw()
 
     def show_game_over_screen(self):
         text = self.font.render("Game Over", True, (255, 0, 0))
