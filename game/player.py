@@ -4,7 +4,7 @@ import numpy as np
 from collections import deque
 from configs.game_config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, BOX_SIZE, BOX_LEFT, BOX_TOP,
-    PLAYER_SPEED, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH)
+    PLAYER_SPEED, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH, UPDATE_DELTA_TIME)
 from configs.bot_config import WALL_CLOSE_RANGE
 from utils.draw_utils import draw_water_drop
     
@@ -46,8 +46,8 @@ class Player(pygame.sprite.Sprite):
     def draw_surround_circle(self, radius: float):
         pygame.draw.circle(self.surface, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
         
-    def update(self, action: np.ndarray, delta_time: float = 1/60000):
-        self.move(action, delta_time)
+    def update(self, action: np.ndarray):
+        self.move(action)
     
     def reset(self):
         self.x = SCREEN_WIDTH // 2
@@ -73,19 +73,19 @@ class Player(pygame.sprite.Sprite):
             self.direction.y = 1
         else: self.direction.y = 0
         
-    def direction_to_position(self, direction: pygame.Vector2, delta_time: float = 1/60000) -> pygame.Vector2:
+    def direction_to_position(self, direction: pygame.Vector2) -> pygame.Vector2:
         if direction.x and direction.y:
-            x = self.x + direction.x * PLAYER_SPEED * delta_time / self.SQRT_2
-            y = self.y + direction.y * PLAYER_SPEED * delta_time / self.SQRT_2
+            x = self.x + direction.x * PLAYER_SPEED * UPDATE_DELTA_TIME / self.SQRT_2
+            y = self.y + direction.y * PLAYER_SPEED * UPDATE_DELTA_TIME / self.SQRT_2
         else:
-            x = self.x + direction.x * PLAYER_SPEED * delta_time
-            y = self.y + direction.y * PLAYER_SPEED * delta_time
+            x = self.x + direction.x * PLAYER_SPEED * UPDATE_DELTA_TIME
+            y = self.y + direction.y * PLAYER_SPEED * UPDATE_DELTA_TIME
         
         x, y = self.handle_screen_collision(x, y)
 
         return pygame.Vector2(x, y)
         
-    def move(self, action: np.ndarray = None, delta_time: float = 0.1/60000):
+    def move(self, action: np.ndarray = None):
         if action is None:
             # user keyboard input
             self.input()
@@ -95,7 +95,7 @@ class Player(pygame.sprite.Sprite):
         if self.direction.x or self.direction.y:
             self.is_moving = True
 
-        self.x, self.y = self.direction_to_position(self.direction, delta_time)
+        self.x, self.y = self.direction_to_position(self.direction)
         
     def handle_screen_collision(self, x, y):
         """Ngăn hình tròn đi ra ngoài màn hình"""

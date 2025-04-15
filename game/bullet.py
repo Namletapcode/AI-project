@@ -2,7 +2,7 @@ import pygame
 import math
 from collections import deque
 from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, USE_BULLET_COLORS,
-                      DISPLAY_BULLET_TRAIL, TRAIL_MAX_LENGTH)
+                      DISPLAY_BULLET_TRAIL, TRAIL_MAX_LENGTH, UPDATE_DELTA_TIME)
 from utils.draw_utils import draw_water_drop
 
 class Bullet(pygame.sprite.Sprite):
@@ -22,10 +22,10 @@ class Bullet(pygame.sprite.Sprite):
         
         self.trail = deque(maxlen=TRAIL_MAX_LENGTH) if DISPLAY_BULLET_TRAIL else None
 
-    def update(self, delta_time: float = 0.1/60000):
+    def update(self):
         # inefficient due to constantly re-calculating sine and cosine
-        self.x += math.cos(self.angle) * self.speed * delta_time
-        self.y += math.sin(self.angle) * self.speed * delta_time
+        self.x += math.cos(self.angle) * self.speed * UPDATE_DELTA_TIME
+        self.y += math.sin(self.angle) * self.speed * UPDATE_DELTA_TIME
         
         if self.bouncing:
             if self.x - self.radius <= 0 or self.x + self.radius >= SCREEN_WIDTH:

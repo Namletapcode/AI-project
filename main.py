@@ -1,5 +1,5 @@
 from game.game_core import Game
-from configs.game_config import dt_max, FPS, UPS, UPDATE_DELTA_TIME
+from configs.game_config import dt_max, FPS, UPS
 from configs.bot_config import DodgeAlgorithm
 from bot.bot_manager import BotManager
 import pygame
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         # dùng first_frame để cập nhật ngay frame đầu tiên (tránh việc không update được trước khi draw)
         while update_time >= update_interval or first_frame:
             action = bot_manager.get_action()
-            game.update(action, delta_time=UPDATE_DELTA_TIME)
+            game.update(action)
             update_time -= update_interval
             first_frame = False
             
