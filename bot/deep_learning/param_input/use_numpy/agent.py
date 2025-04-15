@@ -1,7 +1,11 @@
 import numpy as np
 import random
 from collections import deque
-from agent_01.model import Model
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
+from bot.deep_learning.param_input.use_numpy.model import Model
+from bot.deep_learning.param_input.use_numpy.helper import plot
+from game.game_core import Game
 
 MAX_MEMORY = 100000
 MAX_SAMPLE_SIZE = 1000
@@ -15,19 +19,20 @@ PERFORM_MODE = 2
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, game: Game):
         self.number_of_games = 0
         self.memory = deque(maxlen=MAX_MEMORY)
         self.epsillon = EPSILON
         self.mode = TRAINING_MODE
         self.game = None #TODO
-        self.model = Model(12, 256, 9, LEARNING_RATE)
+        self.model = Model(28, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.game = game
 
     def set_mode(self, mode: int = TRAINING_MODE):
         self.mode = mode
 
     def get_state(self) -> np.ndarray: # get game state. example: array([1, 1, 0, 0, 0, 1, 0, ...0])
-        pass #TODO
+        return self.game.get_state()
 
     def get_move(self, state: np.ndarray) -> np.ndarray:
         move = np.zeros((9, ), dtype=np.float64)
@@ -45,12 +50,21 @@ class Agent:
         return move
 
     def perform_action(self, action: np.ndarray): # call action api in game
-        pass #TODO
+        self.game.take_action(action)
 
-    def get_reward(self) -> tuple[float, bool]: # return result: float, and game_over: bool , need access to game data
-        pass #TODO
+    def get_reward(self) -> tuple[float, bool]: # return result: float, and game_over: bool
+        return self.game.get_reward()
+    
+    def get_score(self) -> int:
+        return self.game.score
+    
+    def restart_game(self):
+        self.game.restart_game()
 
-    def train_short_memory(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray, game_over: bool):
+    def draw_game(self):
+        self.game.draw()
+
+    def train_short_memory(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray):
         target = self.convert(old_state, action, reward, new_state)
         self.model.train(old_state, target)
 
@@ -61,11 +75,11 @@ class Agent:
         else:
             # else pick random 1000 states to re-train
             mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
-        for old_state, action, reward, new_state, game_over in mini_sample:
-            self.train_short_memory(old_state, action, reward, new_state, game_over)
+        for old_state, action, reward, new_state in mini_sample:
+            self.train_short_memory(old_state, action, reward, new_state)
 
-    def remember(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray, game_over: bool):
-        self.memory.append((old_state, action, reward, new_state, game_over))
+    def remember(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray):
+        self.memory.append((old_state, action, reward, new_state))
 
     def convert(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray) -> np.ndarray:
         # use simplified Bellman equation to calculate expected output
@@ -75,7 +89,11 @@ class Agent:
         return target
 
 def train():
-    agent = Agent()
+    game = Game()
+    agent = Agent(game)
+
+    scores = []
+
     while True:
         # get the current game state
         old_state = agent.get_state()
@@ -93,10 +111,10 @@ def train():
         reward, game_over = agent.get_reward()
 
         # train short memory with the action performed
-        agent.train_short_memory(old_state, action, reward, new_state, game_over)
+        agent.train_short_memory(old_state, action, reward, new_state)
 
         # remember the action and the reward
-        agent.remember(old_state, action, reward, new_state, game_over)
+        agent.remember(old_state, action, reward, new_state)
 
         # if game over then train long memory and start again
         if game_over:
@@ -111,11 +129,18 @@ def train():
             if agent.number_of_games % 10 == 0:
                 # save before start new game
                 agent.model.save()
-            # TODO: restart game using agent.perform_action
+
+            # save the score to plot
+            scores.append(agent.get_score())
+            plot(scores)
+
+            agent.restart_game()
 
 def perform():
-    agent = Agent()
+    game = Game()
+    agent = Agent(game)
     agent.set_mode(PERFORM_MODE)
+
     while True:
         # get the current game state
         state = agent.get_state()
@@ -134,7 +159,10 @@ def perform():
             agent.number_of_games += 1
             if agent.number_of_games % 10 == 0:
                 agent.model.save()
-            # TODO: restart game using agent.perform_action
+            agent.restart_game()
+
+        # use pygame to control FPS and UPS
+        agent.game.clock.tick(60)
 
 
 if __name__ == '__main__':

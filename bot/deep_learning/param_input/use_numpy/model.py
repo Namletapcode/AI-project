@@ -35,10 +35,10 @@ class Model:
         # calculate deltas
         loss                = model_raw_output - expected_output
         delta_weight_2      = 1 / loss.size * loss.dot(model_act_hidden_output.T)
-        delta_bias_2        = 1 / loss.size * np.sum(loss, 2)
+        delta_bias_2        = (1 / loss.size) * np.sum(loss, axis=1, keepdims=True)
         delta_hidden        = self.weight_2.T.dot(loss) * self._derivative_ReLU(model_raw_hidden_output)
         delta_weight_1      = 1 / delta_hidden.size * delta_hidden.dot(input.T)
-        delta_bias_1        = 1 / delta_hidden.size * np.sum(delta_hidden, 2)
+        delta_bias_1        = (1 / delta_hidden.size) * np.sum(delta_hidden, axis=1, keepdims=True)
 
         # update weight and bias
         self.weight_1       = self.weight_1 - self.learning_rate * delta_weight_1

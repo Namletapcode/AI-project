@@ -1,9 +1,8 @@
 import pygame
 import math
 import random
-import numpy as np
 from configs.game_config import BULLET_PATTERNS, SCREEN_HEIGHT, SCREEN_WIDTH, GAME_SPEED
-from configs.bot_config import WALL_CLOSE_RANGE, SCAN_RADIUS
+from configs.bot_config import SCAN_RADIUS
 from game.bullet import Bullet
 from game.player import Player
 
@@ -164,7 +163,7 @@ class BulletManager:
                (self.player.y - bullet.y) ** 2 <= end_radius_square]
     
     def get_complex_regions(self, bullets: list[Bullet], 
-                        num_angle_divisions: int = 16, 
+                        num_angle_divisions: int = 8, 
                         num_radius_divisions: int = 3) -> list[float]:
         """
         Converts bullet positions into a complex region representation based on both

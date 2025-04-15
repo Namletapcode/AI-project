@@ -25,8 +25,8 @@ ALGORITHM_CATEGORIES = {
     DodgeAlgorithm.A2C: 'deep_learning'
 }
 
-BOT_ACTION = True               # True if bot is allowed to take action : set by dev
-BOT_DRAW = True                # True if bot is allowed to draw : set by dev
+BOT_ACTION = False               # True if bot is allowed to take action : set by dev
+BOT_DRAW = False                # True if bot is allowed to draw : set by dev
 FILTER_MOVE_INTO_WALL = True
 WALL_CLOSE_RANGE = 10
 

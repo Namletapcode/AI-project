@@ -1,7 +1,6 @@
 import pygame
 import sys
 import math
-import threading
 import numpy as np
 from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE)
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS
@@ -51,19 +50,15 @@ class Game:
         near_wall_info = self.player.get_near_wall_info()
         
         # Combine states into single array
-        state = np.zeros(len(sector_flags) + 4, dtype=np.float64)
+        state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
         state[:len(sector_flags)] = sector_flags
         state[len(sector_flags):] = near_wall_info
+        state = state.reshape(28 if USE_COMPLEX_SCANNING else 12, 1)
         
         return state
     
     def get_reward(self) -> tuple[float, bool]:
         return self.reward if not self.game_over else -10, self.game_over
-
-    def run_in_another_thread(self):    # tạm thời không di chuyển được nếu chạy song luồng
-        new_thread = threading.Thread(target=self.run, daemon=True)
-        new_thread.start()
-        new_thread.join()
 
     def check_events(self):
         for event in pygame.event.get():
@@ -79,10 +74,10 @@ class Game:
         self.frame_index = 0
         self.reward = 0.1
         self.game_over = False
-        self.score=0
-        self.start_time=pygame.time.get_ticks()
+        self.score = 0
+        self.start_time = pygame.time.get_ticks()
 
-    def update(self, action: np.ndarray = None, delta_time: float = 0.0):
+    def update(self, action: np.ndarray = None, delta_time: float = 1/60000):
         # update logic
         self.check_events()
         if not self.game_over:
@@ -109,12 +104,13 @@ class Game:
         self.player.draw()
         self.bullet_manager.draw(self.surface)
         # print(self.get_reward())
-        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
-        time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
+        # score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
+        # time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
     
-        self.surface.blit(score_text, (10, 10))
-        self.surface.blit(time_text, (10, 40))
+        # self.surface.blit(score_text, (10, 10))
+        # self.surface.blit(time_text, (10, 40))
         pygame.display.flip()
+
     def draw_box(self):
         pygame.draw.rect(self.surface, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)
 
