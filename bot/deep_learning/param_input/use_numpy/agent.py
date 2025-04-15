@@ -128,7 +128,8 @@ def train():
 
             if agent.number_of_games % 10 == 0:
                 # save before start new game
-                agent.model.save()
+                # agent.model.save()
+                pass
 
             # save the score to plot
             scores.append(agent.get_score())

@@ -15,8 +15,8 @@ class BulletManager:
         self.radius = 5
         self.player = player
     
-    def update(self, delta_time: float = 0.1/60000):
-        self.bullets.update(delta_time)
+    def update(self):
+        self.bullets.update()
 
     def draw(self, surface):
         for bullet in self.bullets:

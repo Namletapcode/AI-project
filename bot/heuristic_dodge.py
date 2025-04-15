@@ -86,7 +86,7 @@ class HeuristicDodgeBot(BaseBot):
         
         return best_direction_index
 
-    def least_danger_advanced(self):
+    def least_danger_advanced(self, _):
         danger_scores = [0.0] * 9
         zones = [
             (0, SCAN_RADIUS/2, 0),

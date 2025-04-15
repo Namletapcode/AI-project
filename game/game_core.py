@@ -21,8 +21,8 @@ class Game:
     
     def run(self):
         while True:
-            delta_time = min(self.clock.tick(FPS) / 1000, dt_max)
-            self.update(delta_time=delta_time)
+            self.clock.tick(FPS)
+            self.update()
             self.draw()
 
     def take_action(self, action: np.ndarray): # for AI agent
@@ -77,13 +77,13 @@ class Game:
         self.score = 0
         self.start_time = pygame.time.get_ticks()
 
-    def update(self, action: np.ndarray = None, delta_time: float = 1/60000):
+    def update(self, action: np.ndarray = None):
         # update logic
         self.check_events()
         if not self.game_over:
             self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
-            self.player.update(action, delta_time)
-            self.bullet_manager.update(delta_time)
+            self.player.update(action)
+            self.bullet_manager.update()
             self.check_collision()
             self.score += 1
             self.survival_time = (pygame.time.get_ticks() - self.start_time) // 1000
