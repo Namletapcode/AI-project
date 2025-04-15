@@ -6,7 +6,7 @@ import numpy as np
 from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, DODGE_METHOD, BOT_DRAW)
 from bullet_manager import BulletManager
 from player import Player
-from update_bot_ai import Update_bot_ai
+from bot_ai import GameBot
 
 class Game:
     def __init__(self):
@@ -44,7 +44,7 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            self.bullet_manager.spawn_random_bullet_pattern(event)
+            #self.bullet_manager.spawn_random_bullet_pattern(event)
 
     def restart_game(self):
         self.player = Player(self)
@@ -52,7 +52,7 @@ class Game:
         self.enemy_x, self.enemy_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
         self.frame_index = 0
         self.reward = 0.1
-        self.bot = Update_bot_ai(self, DODGE_METHOD)
+        self.bot = GameBot(self, DODGE_METHOD)
         self.game_over = False
         self.score=0
         self.start_time=pygame.time.get_ticks()
@@ -64,7 +64,7 @@ class Game:
             self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
             self.bot.update()
             self.player.update(action)
-            self.bullet_manager.update()
+            self.bullet_manager.update(current_time=pygame.time.get_ticks())
             self.check_collision()
             self.score+=1
             self.survival_time=(pygame.time.get_ticks()-self.start_time) // 1000
@@ -82,6 +82,7 @@ class Game:
             self.bot.draw_vison()
         self.player.draw()
         self.bullet_manager.draw(self.screen)
+        pygame.display.flip()
         # print(self.get_reward())
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))

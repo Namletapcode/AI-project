@@ -20,7 +20,7 @@ class BulletManager:
         self.player = player
         self.spawn_event = [
             {"bullet_type": "ring",             "spawn_time":0, "init_delay": RingBullet().delay,            "delay": 0, "count": RingBullet().num_bullets},
-            {"bullet_type": "spiral",           "spawn_time":0, "init_delay": SpiralBullet().delay,          "delay": 50, "count": SpiralBullet().num_bullets},
+            {"bullet_type": "spiral",           "spawn_time":0, "init_delay": SpiralBullet().delay,          "delay": 100, "count": SpiralBullet().num_bullets, "spawned": 0},
             {"bullet_type": "targeted_shot",    "spawn_time":0, "init_delay": 2000,                          "delay": 0, "count": 5},    
             {"bullet_type": "rotating_ring",    "spawn_time":0, "init_delay": RotatingRingBullet().delay,    "delay": 0, "count": RotatingRingBullet().num_bullets},
             {"bullet_type": "wave",             "spawn_time":0, "init_delay": WaveBullet().delay,            "delay": 0, "count": WaveBullet().num_bullets},
@@ -76,8 +76,8 @@ class BulletManager:
         return result.reshape(12, 1)
 
     def get_random_corner(self) -> tuple[int, int]:
-        corners = [(100, 100), (SCREEN_WIDTH-100, 100), 
-                   (100, SCREEN_HEIGHT-100), (SCREEN_WIDTH-100, SCREEN_HEIGHT-100)]
+        corners = [(0, 0), (SCREEN_WIDTH, 0), 
+                   (0, SCREEN_HEIGHT), (SCREEN_WIDTH, SCREEN_HEIGHT)]
         return random.choice(corners)
     
     def create_bullet_type(self, x, y, spawn_event: dict):
@@ -92,7 +92,8 @@ class BulletManager:
         if spawn_event["bullet_type"] == "spiral":
             base_angle = math.radians(self.angle_offset)
             angle_step = 2 * math.pi / SpiralBullet().num_bullets
-            new_bullets = [Bullet(x, y, base_angle + SpiralBullet().spawned * angle_step, SpiralBullet().speed, SpiralBullet().radius, fade=SpiralBullet().fade, color=SpiralBullet().color)]
+            new_bullets = [Bullet(x, y, base_angle + i * angle_step, SpiralBullet().speed, SpiralBullet().radius, fade=SpiralBullet().fade, color=SpiralBullet().color) 
+                        for i in range(SpiralBullet().num_bullets)]
             self.bullets.add(*new_bullets)
             self.angle_offset += SpiralBullet().rotation_speed
 
@@ -181,8 +182,6 @@ class BulletManager:
     
     def get_converted_regions(self, bullets: list[Bullet], num_sectors: int = 8) -> list[float]:
 
-    
-
         """
         Converts bullet positions into an 8-region representation based on their angle 
         relative to the player.
@@ -223,44 +222,30 @@ class BulletManager:
 
         return sector_flags
     
-    def create_sequential_bullet(self, sequential_spawns: dict, current_time: int):
+    def update(self, current_time: int):
+        self.bullets.update()
+        for event in self.spawn_event:
+            x, y = self.get_random_corner()
+            if current_time >= event["spawn_time"] + event["init_delay"]:
+                event["spawn_time"] = current_time
+                if event["delay"] == 0:  
+                    # Nếu delay = 0, spawn tất cả đạn cùng lúc
+                    self.create_bullet_type(x, y, event)
+                else:
+                #     # Nếu có delay, thêm vào danh sách spawn tuần tự
+                    self.sequential_spawns.append(event)
+
+
         for seq_event in self.sequential_spawns[:]:
-            x, y = seq_event["x"], seq_event["y"]
-            if current_time >= seq_event["spawn_time"] + seq_event["spawned"] * seq_event["delay"]:
-                self.create_bullet_type(x, y, seq_event)
+            if current_time >= seq_event["spawn_time"] + seq_event['spawned'] * seq_event['delay']:
+                x, y = 300, 300
+                base_angle = 0
+                angle_step = 2 * math.pi / seq_event["count"]
+                self.bullets.add(Bullet(x, y, seq_event["spawned"] * angle_step, SpiralBullet().speed, SpiralBullet().radius, fade=SpiralBullet().fade, color=SpiralBullet().color))
                 seq_event["spawned"] += 1
 
                 if seq_event["spawned"] >= seq_event["count"]:
                     self.sequential_spawns.remove(seq_event)
-                    seq_event["spawn_time"] = current_time + seq_event["cooldown"]
-                    seq_event["spawned"] = 0
-                    seq_event.pop("x", None)
-                    seq_event.pop("y", None)
-
-    def update(self, current_time: int):
-        self.bullets.update()
-        
-        for event in self.spawn_event:
-            event.setdefault("spawned", 0)
-            event.setdefault("cooldown", 5000)
-
-        for event in self.spawn_event:
-            if event["delay"] == 0:
-                # Với event không có delay → spawn ngay toàn bộ nếu đủ điều kiện
-                if current_time >= event["spawn_time"] + event["init_delay"]:
-                    self.create_bullet_type(*self.get_random_corner(), event)
-                    event["spawn_time"] = current_time + event["cooldown"]  # đặt lần spawn tiếp theo
-            else:
-                # Với event có delay → spawn tuần tự
-                if current_time >= event["spawn_time"] + event["init_delay"]:
-                    if event not in self.sequential_spawns:
-                        x, y = self.get_random_corner()
-                        event["x"] = x
-                        event["y"] = y
-                        self.sequential_spawns.append(event)
-
-        # Xử lý tuần tự các event đang spawn
-        self.create_sequential_bullet(self.sequential_spawns, current_time)
 
         for bullet in self.bullets.copy():  # Lọc đạn ra ngoài màn hình
             if bullet.x < 0 or bullet.x > SCREEN_WIDTH or bullet.y < 0 or bullet.y > SCREEN_HEIGHT:
