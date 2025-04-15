@@ -40,11 +40,11 @@ class Bullet(pygame.sprite.Sprite):
         if self.is_out_of_bounds():
             self.kill()
 
-    def draw(self, screen):
+    def draw(self, surface):
         if DISPLAY_BULLET_TRAIL:
             self.trail.append((self.x, self.y))
-            draw_water_drop(screen, self)
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+            draw_water_drop(surface, self)
+        pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
         
     def is_out_of_bounds(self):
         return not (0 <= self.x <= SCREEN_WIDTH and 0 <= self.y <= SCREEN_HEIGHT)

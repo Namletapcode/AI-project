@@ -3,7 +3,7 @@ import math
 import random
 import numpy as np
 from configs.game_config import BULLET_PATTERNS, SCREEN_HEIGHT, SCREEN_WIDTH, GAME_SPEED
-from configs.bot_config import WALL_CLOSE_RANGE
+from configs.bot_config import WALL_CLOSE_RANGE, SCAN_RADIUS
 from game.bullet import Bullet
 from game.player import Player
 
@@ -16,56 +16,22 @@ class BulletManager:
         self.radius = 5
         self.player = player
     
-    def get_state(self) -> np.ndarray:
-        """
-        Returns a numpy array of shape (12, 1), representing the player's surroundings.
-    
-        Format:
-        - First 8 indices represent bullets in the 8 surrounding regions.
-        - Last 4 indices represent proximity to the box boundaries.
-    
-        Index Mapping:
-            0: Right
-            1: Up-Right
-            2: Up
-            3: Up-Left
-            4: Left
-            5: Down-Left
-            6: Down
-            7: Down_right
-            8: Near top of box
-            9: Near right of box
-            10: Near bottom of box
-            11: Near left of box
-        """
-        result = np.zeros((12, ), dtype=np.float64)
-        
-        close_bullets = self.get_bullet_in_range(WALL_CLOSE_RANGE)
-        region_information = self.get_converted_regions(close_bullets)
-        for i in range(len(region_information)):
-            if region_information[i]:
-                result[i] = 1
-        # may extend into different parts with different distance ranges
-        # example: 0 -> 25 pixels: part 1, 26 -> 30 pixels: part 2
-        # therefore the result numpy.array might increase its size
+    def update(self, delta_time: float = 0.1/60000):
+        self.bullets.update(delta_time)
 
-        near_wall_info = self.player.get_near_wall_info()
-        for i in range(len(near_wall_info)):
-            if i == 1:
-                result[i + 8] = 1
-
-        return result.reshape(12, 1)
+    def draw(self, surface):
+        for bullet in self.bullets:
+            bullet.draw(surface)
     
     def setup_timers(self):
-        INT_GAME_SPEED = int(GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 1, BULLET_PATTERNS["ring"].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 2, BULLET_PATTERNS['rotating_ring'].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 3, BULLET_PATTERNS["spiral"].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 4, BULLET_PATTERNS["wave"].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 5, BULLET_PATTERNS["expanding_spiral"].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 6, BULLET_PATTERNS["bouncing"].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 7, BULLET_PATTERNS["spiral"].delay//INT_GAME_SPEED)
-        pygame.time.set_timer(pygame.USEREVENT + 8, BULLET_PATTERNS["ring"].delay//INT_GAME_SPEED)
+        pygame.time.set_timer(pygame.USEREVENT + 1, int(BULLET_PATTERNS["ring"].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 2, int(BULLET_PATTERNS['rotating_ring'].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 3, int(BULLET_PATTERNS["spiral"].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 4, int(BULLET_PATTERNS["wave"].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 5, int(BULLET_PATTERNS["expanding_spiral"].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 6, int(BULLET_PATTERNS["bouncing"].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 7, int(BULLET_PATTERNS["spiral"].delay/GAME_SPEED))
+        pygame.time.set_timer(pygame.USEREVENT + 8, int(BULLET_PATTERNS["ring"].delay/GAME_SPEED))
     
     def spawn_random_bullet_pattern(self, event):
         if event.type == pygame.USEREVENT + 1:
@@ -179,7 +145,7 @@ class BulletManager:
             else:
                 bullet.set_color(bullet.origin_color)
     
-    def get_bullet_in_range(self, end_radius: float, start_radius: float = 0) -> list[Bullet]:
+    def get_bullet_in_range(self, end_radius: int, start_radius: int = 0) -> list[Bullet]:
         """
         Retrieves a list of bullets that are within a specified distance range from the player.
 
@@ -190,14 +156,60 @@ class BulletManager:
         Returns:
             list[Bullet]: A list of bullets that are within the specified range.
         """
-        start_radius_square: float = start_radius ** 2
-        end_radius_square: float = end_radius ** 2
+        start_radius_square = start_radius * start_radius
+        end_radius_square = end_radius * end_radius
 
         return [bullet for bullet in self.bullets 
             if start_radius_square <= (self.player.x - bullet.x) ** 2 + 
                (self.player.y - bullet.y) ** 2 <= end_radius_square]
     
-    def get_converted_regions(self, bullets: list[Bullet], num_sectors: int = 8) -> list[float]:
+    def get_complex_regions(self, bullets: list[Bullet], 
+                        num_angle_divisions: int = 16, 
+                        num_radius_divisions: int = 3) -> list[float]:
+        """
+        Converts bullet positions into a complex region representation based on both
+        angle and distance from player.
+
+        Args:
+            bullets: List of bullets to analyze
+            num_angle_divisions: Number of angular divisions (like 16 directions)
+            num_radius_divisions: Number of radius divisions (rings around player)
+
+        Returns:
+            List[float]: List of length (num_angle_divisions * num_radius_divisions)
+                        where 1 indicates bullet presence in that region
+        """
+        total_regions = num_angle_divisions * num_radius_divisions
+        region_flags = [0] * total_regions
+        
+        sector_angle = 2 * math.pi / num_angle_divisions
+        sector_radius = SCAN_RADIUS / num_radius_divisions
+        start_angle = -sector_angle / 2
+        
+        for bullet in bullets:
+            # Tính khoảng cách từ đạn đến player
+            dx = bullet.x - self.player.x
+            dy = bullet.y - self.player.y
+            distance = math.sqrt(dx*dx + dy*dy)
+            
+            # Xác định vòng (ring) chứa đạn
+            ring_index = int(distance / sector_radius)
+            
+            # Tính góc của viên đạn
+            angle = math.atan2(-dy, dx)
+            # Chỉnh lại góc về phạm vi [0, 2*pi)
+            angle = (angle - start_angle) % (2 * math.pi)
+            
+            # Xác định angle chứa đạn
+            angle_index = int(angle // sector_angle)
+            
+            # Convert vị trí 2D (ring, angle) thành index 1D
+            region_index = ring_index * num_angle_divisions + angle_index
+            region_flags[region_index] = 1
+            
+        return region_flags
+    
+    def get_simple_regions(self, bullets: list[Bullet], num_sectors: int = 8) -> list[float]:
         """
         Converts bullet positions into an 8-region representation based on their angle 
         relative to the player.
@@ -229,7 +241,7 @@ class BulletManager:
             # Tính góc của viên đạn so với nhân vật
             angle = math.atan2(self.player.y - bullet.y, bullet.x - self.player.x)
 
-            # Chỉnh lại góc về phạm vi [0, 360)
+            # Chỉnh lại góc về phạm vi [0, 2*pi)
             angle = (angle - start_angle) % (2 * math.pi)
 
             # Xác định nan quạt nào chứa viên đạn
@@ -237,10 +249,3 @@ class BulletManager:
             sector_flags[sector_index] = 1
 
         return sector_flags
-
-    def update(self, delta_time: float = 0.1/60000):
-        self.bullets.update(delta_time)
-
-    def draw(self, screen):
-        for bullet in self.bullets:
-            bullet.draw(screen)

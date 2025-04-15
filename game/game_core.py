@@ -4,17 +4,18 @@ import math
 import threading
 import numpy as np
 from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE)
+from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS
 from game.bullet_manager import BulletManager
 from game.player import Player
 
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Touhou")
         self.clock = pygame.time.Clock() 
-        self.screen_rect = self.screen.get_rect()
-        self.player = Player(self.screen)
+        self.screen_rect = self.surface.get_rect()
+        self.player = Player(self.surface)
         # self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
@@ -30,7 +31,31 @@ class Game:
         self.draw()
 
     def get_state(self) -> np.ndarray:
-        return self.bullet_manager.get_state()
+        """
+        Get current game state as numpy array.
+        
+        Returns:
+            np.ndarray: Array with bullet and wall information:
+            - First N elements (N=8 or N=24): Indicate bullet presence in each region
+              - If USE_COMPLEX_SCANNING=False: 8 elements for 8 directions
+              - If USE_COMPLEX_SCANNING=True: 24 elements (8 directions x 3 distance rings)
+              - Value 1 means bullet present, 0 means no bullet
+            - Last 4 elements: Wall proximity flags [top, right, bottom, left]
+              - Value 1 means near wall, 0 means not near wall
+        """
+        bullets_in_radius = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
+        if USE_COMPLEX_SCANNING:
+            sector_flags = self.bullet_manager.get_complex_regions(bullets_in_radius)
+        else:
+            sector_flags = self.bullet_manager.get_simple_regions(bullets_in_radius)
+        near_wall_info = self.player.get_near_wall_info()
+        
+        # Combine states into single array
+        state = np.zeros(len(sector_flags) + 4, dtype=np.float64)
+        state[:len(sector_flags)] = sector_flags
+        state[len(sector_flags):] = near_wall_info
+        
+        return state
     
     def get_reward(self) -> tuple[float, bool]:
         return self.reward if not self.game_over else -10, self.game_over
@@ -74,31 +99,31 @@ class Game:
                 self.restart_game()
 
     def draw(self, draw_extra: callable = None):
-        # re-draw screen
-        self.screen.fill((0, 0, 0))
+        # re-draw surface
+        self.surface.fill((0, 0, 0))
         self.draw_box()
         
         if draw_extra:
             draw_extra()
             
         self.player.draw()
-        self.bullet_manager.draw(self.screen)
+        self.bullet_manager.draw(self.surface)
         # print(self.get_reward())
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
     
-        self.screen.blit(score_text, (10, 10))
-        self.screen.blit(time_text, (10, 40))
+        self.surface.blit(score_text, (10, 10))
+        self.surface.blit(time_text, (10, 40))
         pygame.display.flip()
     def draw_box(self):
-        pygame.draw.rect(self.screen, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)
+        pygame.draw.rect(self.surface, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)
 
     def show_game_over_screen(self):
         text = self.font.render("Game Over", True, (255, 0, 0))
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
-        self.screen.fill((0, 0, 0))
-        self.screen.blit(text, text_rect)
+        self.surface.fill((0, 0, 0))
+        self.surface.blit(text, text_rect)
         pygame.display.flip()
 
         # time.sleep(2)  # Dừng game trong 2 giây

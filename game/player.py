@@ -13,9 +13,9 @@ class Player(pygame.sprite.Sprite):
     # optimize
     SQRT_2 = math.sqrt(2)
     
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, surface: pygame.Surface):
         super().__init__() #kế thừa lớp con từ lớp cha
-        self.screen = screen
+        self.surface = surface
         self.directions = [
             pygame.Vector2(1, 0),   # Phải
             pygame.Vector2(1, -1),  # Phải - Lên
@@ -40,11 +40,11 @@ class Player(pygame.sprite.Sprite):
     def draw(self):
         if DISPLAY_PLAYER_TRAIL:
             self.trail.append((self.x, self.y))  # Lưu vị trí mới vào trail
-            draw_water_drop(self.screen, self)
-        pygame.draw.circle(self.screen, self.color, (self.x,self.y), self.radius)
+            draw_water_drop(self.surface, self)
+        pygame.draw.circle(self.surface, self.color, (self.x,self.y), self.radius)
 
     def draw_surround_circle(self, radius: float):
-        pygame.draw.circle(self.screen, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
+        pygame.draw.circle(self.surface, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
         
     def update(self, action: np.ndarray, delta_time: float = 1/60000):
         self.move(action, delta_time)

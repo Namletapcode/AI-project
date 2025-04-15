@@ -2,19 +2,19 @@ import math, random
 import numpy as np
 import pygame
 from configs.bot_config import (
-    DodgeMethod, FILTER_MOVE_INTO_WALL, SCAN_RADIUS,
+    DodgeAlgorithm, FILTER_MOVE_INTO_WALL, SCAN_RADIUS, USE_COMPLEX_SCANNING,
     USE_WALL_PENALTY, WALL_PENALTY_BIAS, WALL_MARGIN)
 from configs.game_config import BOX_LEFT, BOX_SIZE, BOX_TOP
-from utils.draw_utils import draw_sector
+from utils.draw_utils import draw_sector, draw_complex_sector
 from bot.base_bot import BaseBot
 from game.game_core import Game
 
 class HeuristicDodgeBot(BaseBot):
-    def __init__(self, game: "Game", method = DodgeMethod.FURTHEST_SAFE_DIRECTION):
+    def __init__(self, game: "Game", method = DodgeAlgorithm.FURTHEST_SAFE_DIRECTION):
         super().__init__(game)
         self.method = method
         self.game = game
-        self.screen = game.screen
+        self.surface = game.surface
         # Hành động: 8 hướng + đứng yên (index 8)
         self.action = np.array([0,0,0,0,0,0,0,0,1])
         
@@ -29,11 +29,11 @@ class HeuristicDodgeBot(BaseBot):
             return self.action
 
         method_map = {
-            DodgeMethod.FURTHEST_SAFE_DIRECTION: self.furthest_safe,
-            DodgeMethod.LEAST_DANGER_PATH: self.least_danger,
-            DodgeMethod.LEAST_DANGER_PATH_ADVANCED: self.least_danger_advanced,
-            DodgeMethod.RANDOM_SAFE_ZONE: self.random_move,
-            DodgeMethod.OPPOSITE_THREAT_DIRECTION: self.opposite_threat
+            DodgeAlgorithm.FURTHEST_SAFE_DIRECTION: self.furthest_safe,
+            DodgeAlgorithm.LEAST_DANGER_PATH: self.least_danger,
+            DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED: self.least_danger_advanced,
+            DodgeAlgorithm.RANDOM_SAFE_ZONE: self.random_move,
+            DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION: self.opposite_threat
         }
         
         # Lấy hàm xử lý né đạn dựa trên self.method từ method_map.
@@ -175,24 +175,39 @@ class HeuristicDodgeBot(BaseBot):
         return sector_flags
     
     def draw_vision(self):
-        # Vẽ vòng quét & nền cho debug
         self.player.draw_surround_circle(SCAN_RADIUS)
-        self.draw_sectors(SCAN_RADIUS)
+        if USE_COMPLEX_SCANNING:
+            self.draw_complex_sectors(SCAN_RADIUS)
+        else:
+            self.draw_simple_sectors(SCAN_RADIUS)
         self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128,0,128))
         best_direction_index = np.argmax(self.action)
         if best_direction_index != 8:
-            draw_sector(self.screen, self.player.x, self.player.y, 50, best_direction_index, (0, 255, 0))
+            draw_sector(self.surface, self.player.x, self.player.y, 50, best_direction_index, (0, 255, 0))
     
-    def draw_sectors(self, radius: int, num_sectors=None):
-        if num_sectors is None:
-            bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
-            sector_flags = self.game.bullet_manager.get_converted_regions(bullets_in_radius)
-            num_sectors = len(sector_flags)
+    def draw_simple_sectors(self, radius: int):
+        """Vẽ các sector đơn giản (chỉ chia theo góc)"""
+        bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
+        sector_flags = self.game.bullet_manager.get_simple_regions(bullets_in_radius)
+        num_sectors = len(sector_flags)
         for i in range(num_sectors):
             # Chọn màu: Vàng nếu có đạn, Trắng nếu không
             color = (255,255,0) if sector_flags[i] else (255,255,255)
             if sector_flags[i]:
-                draw_sector(self.screen, self.player.x, self.player.y, radius, i, color, num_sectors)
+                draw_sector(
+                    self.surface, self.player.x, self.player.y,
+                    radius, i, color, num_sectors)
+    
+    def draw_complex_sectors(self, radius: int, num_angle_divisions: int = 16, num_radius_divisions: int = 3):
+        """Vẽ các sector phức tạp (chia theo cả góc và bán kính)"""
+        bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
+        sector_flags = self.game.bullet_manager.get_complex_regions(bullets_in_radius, num_angle_divisions, num_radius_divisions)
+        for i in range(len(sector_flags)):
+            color = (255,255,0) if sector_flags[i] else (255,255,255)
+            if sector_flags[i]:
+                draw_complex_sector(
+                    self.surface, self.player.x, self.player.y, i,
+                    radius, num_angle_divisions, num_radius_divisions, color)
 
     def reset_action(self):
         self.action[:] = 0
