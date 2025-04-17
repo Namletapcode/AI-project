@@ -1,7 +1,7 @@
 import os
 import sys
 
-project_root = '/content/1234'
+project_root = '/content/AI-project'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
