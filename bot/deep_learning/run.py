@@ -5,7 +5,7 @@ project_root = '/content/1234'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from bot.deep_learning.vision_input.mark_Runner import BenchmarkRunner
+from bot.deep_learning.mark_Runner import BenchmarkRunner
 from bot.heuristic_dodge import HeuristicDodgeBot
 from game.game_core import Game
 from configs.bot_config import DodgeAlgorithm
