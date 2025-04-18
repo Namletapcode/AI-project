@@ -3,7 +3,6 @@ import win32gui
 import win32ui
 import win32con
 import numpy as np
-import time
 
 plt.ion()
 
@@ -69,6 +68,7 @@ def get_screen_shot_gray_scale(x: float, y: float, img_size: int) -> np.ndarray:
 
 # testing
 if __name__ == '__main__':
+    import time
     start = time.time()
     temp = get_screen_shot_gray_scale(650 / 2, 650 / 2, 100)
     end = time.time()

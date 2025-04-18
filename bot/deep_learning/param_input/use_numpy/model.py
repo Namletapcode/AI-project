@@ -1,18 +1,23 @@
 import numpy as np
 import os
 
+weight_1_path = 'bot/deep_learning/param_input/use_numpy/weight_1.bin'
+bias_1_path = 'bot/deep_learning/param_input/use_numpy/bias_1.bin'
+weight_2_path = 'bot/deep_learning/param_input/use_numpy/weight_2.bin'
+bias_2_path = 'bot/deep_learning/param_input/use_numpy/bias_2.bin'
+
 class Model:
 
     def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.01):
 
         self.learning_rate = learning_rate
 
-        if os.path.exists('weight_1.bin') and os.path.exists('bias_1.bin') and os.path.exists('weight_2.bin') and os.path.exists('bias_2.bin'):
+        if os.path.exists(weight_1_path) and os.path.exists(bias_1_path) and os.path.exists(weight_2_path) and os.path.exists(bias_2_path):
             # load existed weight and bias 
-            self.weight_1   = np.fromfile('weight_1.bin', dtype=np.float64).reshape(hidden_layer, input_layer)
-            self.bias_1     = np.fromfile('bias_1.bin', dtype=np.float64).reshape(hidden_layer, 1)
-            self.weight_2   = np.fromfile('weight_2.bin', dtype=np.float64).reshape(output_layer, hidden_layer)
-            self.bias_2     = np.fromfile('bias_2.bin', dtype=np.float64).reshape(output_layer, 1)
+            self.weight_1   = np.fromfile(weight_1_path, dtype=np.float64).reshape(hidden_layer, input_layer)
+            self.bias_1     = np.fromfile(bias_1_path, dtype=np.float64).reshape(hidden_layer, 1)
+            self.weight_2   = np.fromfile(weight_2_path, dtype=np.float64).reshape(output_layer, hidden_layer)
+            self.bias_2     = np.fromfile(bias_2_path, dtype=np.float64).reshape(output_layer, 1)
 
         else:
             # generate random weight and bias with all element between -0.5 and 0.5
@@ -48,10 +53,10 @@ class Model:
 
     def save(self) -> None:
         # save weight and bias
-        self.weight_1.tofile('weight_1.bin')
-        self.bias_1.tofile('bias_1.bin')
-        self.weight_2.tofile('weight_2.bin')
-        self.bias_2.tofile('bias_2.bin')
+        self.weight_1.tofile(weight_1_path)
+        self.bias_1.tofile(bias_1_path)
+        self.weight_2.tofile(weight_2_path)
+        self.bias_2.tofile(bias_2_path)
 
     def _ReLU(self, A: np.ndarray) -> np.ndarray:
         return np.maximum(0, A)
