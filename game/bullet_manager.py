@@ -9,106 +9,109 @@ from game.player import Player
 class BulletManager:
     def __init__(self, player: "Player"):
         self.bullets = pygame.sprite.Group()
-        self.spawn_time = 0
-        self.angle_offset = 0
-        self.radius = 5
         self.player = player
         self.key = 0
-        
-        self.spawn_event = [
-            {"type": "ring",     "spawn_time": BULLET_PATTERNS["ring"].delay,        "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["ring"]},
-            {"type": "target",   "spawn_time": BULLET_PATTERNS["ring"].delay,        "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["ring"]},
-            {"type": "bouncing", "spawn_time": BULLET_PATTERNS["bouncing"].delay,    "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["bouncing"]},
-            {"type": "spiral",   "spawn_time": BULLET_PATTERNS["spiral"].delay,      "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["spiral"]},
-            {"type": "tornado",  "spawn_time": BULLET_PATTERNS["tornado"].delay,     "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["tornado"]},
-            {"type": "sin_wave", "spawn_time": BULLET_PATTERNS["sin_wave"].delay,    "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["sin_wave"], "base_x": 0, "base_y": 0, "angle": 0},
-        ]
-        self.sequential_spawns = []  # Danh sách các viên đạn spawn tuần tự
+        self.reset(0)
 
-    def get_random_corner(self) -> tuple[int, int]:
-        corners = [(75,75), (SCREEN_WIDTH-75, 75), 
-                   (75, SCREEN_HEIGHT-75), (SCREEN_WIDTH-75, SCREEN_HEIGHT-75)]
+    def get_random_point(self) -> tuple[int, int]:
+        padding = 40
+        corners = [(padding, padding), (SCREEN_WIDTH - padding, padding), (padding, SCREEN_HEIGHT - padding), (SCREEN_WIDTH - padding, SCREEN_HEIGHT - padding),
+                   (padding, SCREEN_HEIGHT / 2), (SCREEN_WIDTH - padding, SCREEN_HEIGHT / 2), (SCREEN_WIDTH / 2, padding), (SCREEN_WIDTH / 2, SCREEN_HEIGHT - padding)]
         return random.choice(corners)
+    
+    def random_delay(self, event) -> int:
+        return random.randint(-event["prop"].delay_offset_limit, event["prop"].delay_offset_limit)
     
     def create_bullet_type(self, x, y, event: dict, update_num: int):
         if event["type"] == "spiral":
-            if event["spawned"] == 0:
-                event["spawn_x"], event["spawn_y"] = x, y
-            if update_num >= event["spawn_time"] + event["prop"].interval_delay * event["spawned"]:
-                base_angle = math.radians(self.angle_offset)
-                angle_step = 2 * math.pi / event["prop"].num_bullets
-                self.bullets.add(Bullet(event["spawn_x"], event["spawn_y"], base_angle + event["spawned"] * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color))
-                self.angle_offset += event["prop"].rotation_speed
-                event["spawned"] += 1
-            if event["spawned"] >= event["prop"].num_bullets:
-                event["spawned"] = 0
-                event["spawn_time"] = update_num + event["prop"].delay
-                self.angle_offset = 0
-            return
+            if random.random() < event["prop"].probability or event["spawning"]:
+                event["spawning"] = True
+                if event["spawned"] == 0:
+                    event["spawn_x"], event["spawn_y"] = x, y
+                if update_num >= event["spawn_time"] + event["prop"].interval_delay * event["spawned"]:
+                    base_angle = math.radians(self.angle_offset)
+                    angle_step = 2 * math.pi / event["prop"].num_bullets
+                    self.bullets.add(Bullet(event["spawn_x"], event["spawn_y"], base_angle + event["spawned"] * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color))
+                    self.angle_offset += event["prop"].rotation_speed
+                    event["spawned"] += 1
+                if event["spawned"] >= event["prop"].num_bullets:
+                    event["spawned"] = 0
+                    event["spawn_time"] = update_num + event["prop"].delay + self.random_delay(event)
+                    self.angle_offset = 0
+                    event["spawning"] = False
         
-        if event["type"] == "tornado":
-            if event["spawned"] == 0:
-                event["spawn_x"], event["spawn_y"] = SCREEN_HEIGHT/2, SCREEN_WIDTH/2
-            if update_num >= event["spawn_time"] + event["prop"].interval_delay * event["spawned"]:
-                base_angle = math.radians(self.angle_offset)
-                angle_step = 2 * math.pi / event["prop"].num_bullets
-                Bullets = [Bullet(event["spawn_x"], event["spawn_y"], (2*math.pi/6)*i + base_angle + event["spawned"] * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color) for i in range(event["prop"].num_bullets)]
-                self.bullets.add(Bullets)
-                self.angle_offset += event["prop"].rotation_speed
-                event["spawned"] += 1
-            if event["spawned"] >= event["prop"].num_bullets:
-                event["spawned"] = 0
-                event["spawn_time"] = update_num + event["prop"].delay
-                self.angle_offset = 0
-            return
+        elif event["type"] == "tornado":
+            if random.random() < event["prop"].probability or event["spawning"]:
+                event["spawning"] = True
+                if event["spawned"] == 0:
+                    event["spawn_x"], event["spawn_y"] = SCREEN_HEIGHT/2, SCREEN_WIDTH/2
+                if update_num >= event["spawn_time"] + event["prop"].interval_delay * event["spawned"]:
+                    base_angle = math.radians(self.angle_offset)
+                    angle_step = 2 * math.pi / event["prop"].num_bullets
+                    Bullets = [Bullet(event["spawn_x"], event["spawn_y"], (2*math.pi/6)*i + base_angle + event["spawned"] * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color) for i in range(event["prop"].num_bullets)]
+                    self.bullets.add(Bullets)
+                    self.angle_offset += event["prop"].rotation_speed
+                    event["spawned"] += 1
+                if event["spawned"] >= event["prop"].num_bullets:
+                    event["spawned"] = 0
+                    event["spawn_time"] = update_num + event["prop"].delay + self.random_delay(event)
+                    self.angle_offset = 0
+                    event["spawning"] = False
         
-        if event["type"] == "sin_wave":
-            if event["spawned"] == 0:
+        elif event["type"] == "sin_wave":
+            if random.random() < event["prop"].probability or event["spawning"]:
+                event["spawning"] = True
+
+                if event["spawned"] == 0:
+                    event["spawn_x"], event["spawn_y"] = x, y
+                    event["base_x"], event["base_y"] = x, y
+                    event["angle"] = math.atan2(self.player.y - event["spawn_y"], self.player.x - event["spawn_x"])
+
+                if update_num >= event["spawn_time"] + event["prop"].interval_delay * event["spawned"]:
+                    # Góc vuông góc với góc bắn
+                    perpendicular_angle = event["angle"] + math.pi / 2
+
+                    # Wave offset dao động theo 1 chu kỳ sin
+                    wave_phase = 4 * math.pi * (event["spawned"] / event["prop"].count)
+                    wave_offset = math.sin(wave_phase) * 30  # 30 là biên độ
+
+                    # Lệch theo hướng vuông góc
+                    spawn_x = event["base_x"] + wave_offset * math.cos(perpendicular_angle)
+                    spawn_y = event["base_y"] + wave_offset * math.sin(perpendicular_angle)
+
+                    self.bullets.add(Bullet(spawn_x, spawn_y, event["angle"], event["prop"].speed, event["prop"].radius, color=event["prop"].color))
+
+                    event["spawned"] += 1
+
+                if event["spawned"] >= event["prop"].count:
+                    event["spawned"] = 0
+                    event["spawn_time"] = update_num + event["prop"].delay + self.random_delay(event)
+                    event["spawning"] = False
+
+        elif event["type"] == "ring":
+            if random.random() < event["prop"].probability:
                 event["spawn_x"], event["spawn_y"] = x, y
-                event["base_x"], event["base_y"] = x, y
-                event["angle"] = math.atan2(self.player.y - event["spawn_y"], self.player.x - event["spawn_x"])
-
-            if update_num >= event["spawn_time"] + event["prop"].interval_delay * event["spawned"]:
-                # Góc vuông góc với góc bắn
-                perpendicular_angle = event["angle"] + math.pi / 2
-
-                # Wave offset dao động theo 1 chu kỳ sin
-                wave_phase = 4 * math.pi * (event["spawned"] / event["prop"].count)
-                wave_offset = math.sin(wave_phase) * 30  # 30 là biên độ
-
-                # Lệch theo hướng vuông góc
-                spawn_x = event["base_x"] + wave_offset * math.cos(perpendicular_angle)
-                spawn_y = event["base_y"] + wave_offset * math.sin(perpendicular_angle)
-
-                self.bullets.add(Bullet(spawn_x, spawn_y, event["angle"], event["prop"].speed, event["prop"].radius, color=event["prop"].color))
-
-                event["spawned"] += 1
-
-            if event["spawned"] >= event["prop"].count:
-                event["spawned"] = 0
-                event["spawn_time"] = update_num + event["prop"].delay
-            return
-
-        event["spawn_x"], event["spawn_y"] = x, y
-
-        if event["type"] == "ring":
-            angle_step = 2 * math.pi / event["prop"].num_bullets
-            new_bullets = [Bullet(event["spawn_x"], event["spawn_y"], i * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color) 
-                       for i in range(event["prop"].num_bullets)]
-            self.bullets.add(*new_bullets)
-        if event["type"] == "targeted_shot":
-            angle = math.atan2(self.player.x - y, self.player.y - x)
-            self.bullets.add(Bullet(event["spawn_x"], event["spawn_y"], angle, DEFAULT_BULLET_SPEED, event["prop"].radius, event["prop"].color))
-            event["spawn_time"] = update_num + event["prop"].delay
-        if event["type"] == "bouncing":
-            angle_step = 2 * math.pi / event["prop"].num_bullets
-            new_bullets = [Bullet(event["spawn_x"], event["spawn_y"], i * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color, bouncing=True)
+                angle_step = 2 * math.pi / event["prop"].num_bullets
+                new_bullets = [Bullet(event["spawn_x"], event["spawn_y"], i * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color) 
                         for i in range(event["prop"].num_bullets)]
-            self.bullets.add(*new_bullets)
-            event["spawn_time"] = update_num + event["prop"].delay
+                self.bullets.add(*new_bullets)
+                event["spawn_time"] = update_num + event["prop"].delay + self.random_delay(event)
 
-        event["spawned"] = 0
-        event["spawn_time"] = update_num + event["prop"].delay
+        elif event["type"] == "targeted_shot":
+            if random.random() < event["prop"].probability:
+                event["spawn_x"], event["spawn_y"] = x, y
+                angle = math.atan2(self.player.x - y, self.player.y - x)
+                self.bullets.add(Bullet(event["spawn_x"], event["spawn_y"], angle, DEFAULT_BULLET_SPEED, event["prop"].radius, event["prop"].color))
+                event["spawn_time"] = update_num + event["prop"].delay + self.random_delay(event)
+
+        elif event["type"] == "bouncing":
+            if random.random() < event["prop"].probability:
+                event["spawn_x"], event["spawn_y"] = x, y
+                angle_step = 2 * math.pi / event["prop"].num_bullets
+                new_bullets = [Bullet(event["spawn_x"], event["spawn_y"], i * angle_step, event["prop"].speed, event["prop"].radius, color=event["prop"].color, bouncing=True)
+                            for i in range(event["prop"].num_bullets)]
+                self.bullets.add(*new_bullets)
+                event["spawn_time"] = update_num + event["prop"].delay + self.random_delay(event)
         
     def get_bullets_detail(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullets]
@@ -233,10 +236,23 @@ class BulletManager:
 
     def update(self, update_num: int):
         for event in self.spawn_event:
-            if update_num >= event["spawn_time"]:
-                self.create_bullet_type(*self.get_random_corner(), event, update_num)
+            if update_num >= event["spawn_time"] and event["prop"].enable:
+                self.create_bullet_type(*self.get_random_point(), event, update_num)
         self.bullets.update()
 
     def draw(self, screen):
         for bullet in self.bullets:
             bullet.draw(screen)
+
+    def reset(self, update_count: int = 0):
+        self.spawn_time = 0
+        self.angle_offset = 0
+        self.radius = 5
+        self.spawn_event = [
+            {"type": "ring",     "spawn_time": BULLET_PATTERNS["ring"].delay + update_count,     "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["ring"]},
+            {"type": "target",   "spawn_time": BULLET_PATTERNS["ring"].delay + update_count,     "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["ring"]},
+            {"type": "bouncing", "spawn_time": BULLET_PATTERNS["bouncing"].delay + update_count, "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["bouncing"]},
+            {"type": "spiral",   "spawn_time": BULLET_PATTERNS["spiral"].delay + update_count,   "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["spiral"], "spawning": False},
+            {"type": "tornado",  "spawn_time": BULLET_PATTERNS["tornado"].delay + update_count,  "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["tornado"], "spawning": False},
+            {"type": "sin_wave", "spawn_time": BULLET_PATTERNS["sin_wave"].delay + update_count, "spawned": 0, "spawn_x": 0, "spawn_y": 0, "prop": BULLET_PATTERNS["sin_wave"], "base_x": 0, "base_y": 0, "angle": 0, "spawning": False},
+        ]

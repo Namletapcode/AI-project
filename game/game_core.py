@@ -14,11 +14,11 @@ class Game:
         pygame.display.set_caption("Touhou")
         self.clock = pygame.time.Clock() 
         self.screen_rect = self.surface.get_rect()
+        self.update_counter = 0
         self.player = Player(self.surface)
-        # self.bullet_manager = BulletManager(self.player)
+        self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
-        self.update_counter = 0
     
     def run(self):
         while True:
@@ -70,9 +70,8 @@ class Game:
 
     def restart_game(self):
         self.player.reset()
-        self.bullet_manager = BulletManager(self.player)
-        self.frame_index = 0
-        self.reward = 0.1
+        self.bullet_manager.reset(self.update_counter)
+        self.reward = 0.5
         self.game_over = False
         self.score = 0
         self.start_time = pygame.time.get_ticks()
@@ -105,10 +104,10 @@ class Game:
         self.player.draw()
         self.bullet_manager.draw(self.surface)
         # print(self.get_reward())
-        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
+        # score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         # time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
     
-        self.surface.blit(score_text, (10, 10))
+        # self.surface.blit(score_text, (10, 10))
         # self.surface.blit(time_text, (10, 40))
         pygame.display.flip()
 

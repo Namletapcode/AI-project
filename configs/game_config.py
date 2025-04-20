@@ -49,18 +49,20 @@ BulletConfig = namedtuple('BulletConfig', [
     'spawn_time', # Tốc độ đạn (pixel/s) ở GAME_SPEED = 1.0
     'delay',
     'interval_delay',
+    'delay_offset_limit',
     'init_delay',
     'radius',
     'color',
     'rotation_speed',  # cho rotating và spiral  # cho wave
-    'count',  
-      # cho expanding
-], defaults=[0] * 9)  # Set default 0 cho tất cả các trường
+    'count', # cho expanding
+    'probability',
+    'enable'
+], defaults=[0] * 11)  # Set default 0 cho tất cả các trường
 
 BULLET_PATTERNS = {
-    "ring":     BulletConfig(num_bullets=24, speed=DEFAULT_BULLET_SPEED, delay=75,   interval_delay = 0, radius=DEFAULT_BULLET_RADIUS, color=GREEN),
-    "bouncing": BulletConfig(num_bullets=10, speed=DEFAULT_BULLET_SPEED, delay=100,  interval_delay = 0, radius=DEFAULT_BULLET_RADIUS, color=BLUE),
-    "spiral":   BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=125,  interval_delay = 5, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=3, count=0),
-    "tornado":  BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=1000, interval_delay = 5, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=5, count=0),
-    "sin_wave": BulletConfig(num_bullets=60, speed=DEFAULT_BULLET_SPEED, delay=75,   interval_delay = 5, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=5, count=30),
+    "ring":     BulletConfig(num_bullets=24, speed=DEFAULT_BULLET_SPEED, delay=75,   interval_delay = 0, delay_offset_limit=20, radius=DEFAULT_BULLET_RADIUS, color=GREEN, probability=0.8, enable=True),
+    "bouncing": BulletConfig(num_bullets=10, speed=DEFAULT_BULLET_SPEED, delay=100,  interval_delay = 0, delay_offset_limit=35, radius=DEFAULT_BULLET_RADIUS, color=BLUE, probability=0.5, enable=True),
+    "spiral":   BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=125,  interval_delay = 5, delay_offset_limit=50, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=3, count=0, probability=0.8, enable=True),
+    "tornado":  BulletConfig(num_bullets=6, speed=DEFAULT_BULLET_SPEED, delay=1000, interval_delay = 10, delay_offset_limit=250, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=5, count=0, probability=1.0, enable=True),
+    "sin_wave": BulletConfig(num_bullets=30, speed=DEFAULT_BULLET_SPEED, delay=75,   interval_delay = 5, delay_offset_limit=20, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=5, count=16, probability=0.3, enable=False),
 }
