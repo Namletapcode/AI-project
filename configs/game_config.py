@@ -11,7 +11,7 @@ UPS =  BASE_UPS * GAME_SPEED        # Tốc độ cập nhật game (updates per
 dt_max = 3 / FPS
 
 PLAYER_SPEED = 200                  # Tốc độ di chuyển của player (pixel/s)
-DEFAULT_BULLET_SPEED = 150          # Tốc độ đạn (pixel/s)
+DEFAULT_BULLET_SPEED = 80          # Tốc độ đạn (pixel/s)
 
 DEFAULT_BULLET_RADIUS = 5
 BOX_SIZE = 500
@@ -45,21 +45,22 @@ MAGENTA = (255, 0, 255)
 
 BulletConfig = namedtuple('BulletConfig', [
     'num_bullets',
-    'speed', # Tốc độ đạn (pixel/s) ở GAME_SPEED = 1.0
+    'speed',
+    'spawn_time', # Tốc độ đạn (pixel/s) ở GAME_SPEED = 1.0
     'delay',
+    'interval_delay',
+    'init_delay',
     'radius',
     'color',
-    'fade',
-    'rotation_speed',  # cho rotating và spiral
-    'wave_amplitude',  # cho wave
-    'speed_increment'  # cho expanding
+    'rotation_speed',  # cho rotating và spiral  # cho wave
+    'count',  
+      # cho expanding
 ], defaults=[0] * 9)  # Set default 0 cho tất cả các trường
 
 BULLET_PATTERNS = {
-    "ring":             BulletConfig(num_bullets=24, speed=DEFAULT_BULLET_SPEED, delay=1200, radius=DEFAULT_BULLET_RADIUS, color=GREEN),
-    "rotating_ring":    BulletConfig(num_bullets=12, speed=DEFAULT_BULLET_SPEED, delay=2000, radius=DEFAULT_BULLET_RADIUS, color=YELLOW, rotation_speed=5),
-    "bouncing":         BulletConfig(num_bullets=10, speed=DEFAULT_BULLET_SPEED, delay=2200, radius=DEFAULT_BULLET_RADIUS, color=BLUE),
-    "spiral":           BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=2500, radius=DEFAULT_BULLET_RADIUS, color=PURPLE, rotation_speed=5),
-    "wave":             BulletConfig(num_bullets=10, speed=DEFAULT_BULLET_SPEED, delay=1800, radius=DEFAULT_BULLET_RADIUS, color=CYAN, wave_amplitude=30),
-    "expanding_spiral": BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=3000, radius=DEFAULT_BULLET_RADIUS, color=MAGENTA, speed_increment=0.1)
+    "ring":     BulletConfig(num_bullets=24, speed=DEFAULT_BULLET_SPEED, delay=75,   interval_delay = 0, radius=DEFAULT_BULLET_RADIUS, color=GREEN),
+    "bouncing": BulletConfig(num_bullets=10, speed=DEFAULT_BULLET_SPEED, delay=100,  interval_delay = 0, radius=DEFAULT_BULLET_RADIUS, color=BLUE),
+    "spiral":   BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=125,  interval_delay = 5, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=3, count=0),
+    "tornado":  BulletConfig(num_bullets=36, speed=DEFAULT_BULLET_SPEED, delay=1000, interval_delay = 5, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=5, count=0),
+    "sin_wave": BulletConfig(num_bullets=60, speed=DEFAULT_BULLET_SPEED, delay=75,   interval_delay = 5, radius=DEFAULT_BULLET_RADIUS, color=WHITE, rotation_speed=5, count=30),
 }

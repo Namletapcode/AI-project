@@ -18,6 +18,7 @@ class Game:
         # self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
+        self.update_counter = 0
     
     def run(self):
         while True:
@@ -65,7 +66,7 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            self.bullet_manager.spawn_random_bullet_pattern(event)
+            # self.bullet_manager.spawn_random_bullet_pattern(event)
 
     def restart_game(self):
         self.player.reset()
@@ -78,12 +79,15 @@ class Game:
         self.start_time = pygame.time.get_ticks()
 
     def update(self, action: np.ndarray = None):
+        self.update_counter += 1
         # update logic
         self.check_events()
         if not self.game_over:
             self.player.update(action)
             self.reward = 0.5 if not self.player.is_moving else 0.0 # reset every loop, only set to zero if move, -10 if got hit
             self.bullet_manager.update()
+            if self.bullet_manager.key == 0:
+                self.bullet_manager.update(update_num=self.update_counter)
             self.check_collision()
             self.score += 1
             self.survival_time = (pygame.time.get_ticks() - self.start_time) // 1000
@@ -104,10 +108,10 @@ class Game:
         self.player.draw()
         self.bullet_manager.draw(self.surface)
         # print(self.get_reward())
-        # score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
+        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         # time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
     
-        # self.surface.blit(score_text, (10, 10))
+        self.surface.blit(score_text, (10, 10))
         # self.surface.blit(time_text, (10, 40))
         pygame.display.flip()
 
