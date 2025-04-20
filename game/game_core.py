@@ -58,7 +58,7 @@ class Game:
         return state
     
     def get_reward(self) -> tuple[float, bool]:
-        return self.reward if not self.game_over else -10, self.game_over
+        return self.reward if not self.game_over else -10.0, self.game_over
 
     def check_events(self):
         for event in pygame.event.get():
@@ -81,8 +81,8 @@ class Game:
         # update logic
         self.check_events()
         if not self.game_over:
-            self.reward = 0.1 # reset every loop, only set to zero if move, -10 if got hit
             self.player.update(action)
+            self.reward = 0.5 if not self.player.is_moving else 0.0 # reset every loop, only set to zero if move, -10 if got hit
             self.bullet_manager.update()
             self.check_collision()
             self.score += 1

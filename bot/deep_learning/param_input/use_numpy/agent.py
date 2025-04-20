@@ -119,7 +119,7 @@ def train():
         # if game over then train long memory and start again
         if game_over:
             # reduce epsilon / percentage of random move
-            agent.epsillon /= EPSILON_DECAY
+            agent.epsillon *= EPSILON_DECAY
             agent.epsillon = max(agent.epsillon, MIN_EPSILON)
 
             # increase number of game and train long memory / re-train experience before start new game
@@ -136,6 +136,8 @@ def train():
             plot(scores)
 
             agent.restart_game()
+
+        agent.game.clock.tick(60)
 
 def perform():
     game = Game()

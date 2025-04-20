@@ -190,6 +190,8 @@ class BulletManager:
             dx = bullet.x - self.player.x
             dy = bullet.y - self.player.y
             distance = math.sqrt(dx*dx + dy*dy)
+            if distance >= SCAN_RADIUS:
+                continue
             
             # Xác định vòng (ring) chứa đạn
             ring_index = int(distance / sector_radius)
