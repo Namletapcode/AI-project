@@ -2,7 +2,7 @@ import pygame
 import math
 import random
 import numpy as np
-from settings import *
+from configs.settings import *
 from bullet import Bullet
 from player import Player
 import time
