@@ -2,25 +2,20 @@ import pygame
 import math
 import numpy as np
 from collections import deque
-from settings import (SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, BOX_SIZE, BOX_LEFT, BOX_TOP,
-                      WALL_CLOSE_RANGE, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH)
-from typing import TYPE_CHECKING
-from help_methods import draw_water_drop
-
-if TYPE_CHECKING:
-    from game import Game
+from configs.game_config import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, BOX_SIZE, BOX_LEFT, BOX_TOP,
+    PLAYER_SPEED, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH, UPDATE_DELTA_TIME)
+from configs.bot_config import WALL_CLOSE_RANGE
+from utils.draw_utils import draw_water_drop
     
 class Player(pygame.sprite.Sprite):
     
     # optimize
     SQRT_2 = math.sqrt(2)
     
-    def __init__(self, game: "Game"):
+    def __init__(self, surface: pygame.Surface):
         super().__init__() #kế thừa lớp con từ lớp cha
-        self.game = game
-        self.screen = game.screen
-        self.screen_rect = game.screen_rect
-        # self.rect = pygame.Rect(self.settings.screen_width//2,self.settings.screen_height-40,30,30)
+        self.surface = surface
         self.directions = [
             pygame.Vector2(1, 0),   # Phải
             pygame.Vector2(1, -1),  # Phải - Lên
@@ -38,20 +33,29 @@ class Player(pygame.sprite.Sprite):
         self.speed = PLAYER_SPEED
         self.x = SCREEN_WIDTH // 2
         self.y = SCREEN_HEIGHT // 2
+        self.is_moving = False
         
         self.trail = deque(maxlen=TRAIL_MAX_LENGTH)  if DISPLAY_PLAYER_TRAIL else None
         
     def draw(self):
         if DISPLAY_PLAYER_TRAIL:
             self.trail.append((self.x, self.y))  # Lưu vị trí mới vào trail
-            draw_water_drop(self.screen, self)
-        pygame.draw.circle(self.screen, self.color, (self.x,self.y), self.radius)
+            draw_water_drop(self.surface, self)
+        pygame.draw.circle(self.surface, self.color, (self.x,self.y), self.radius)
 
     def draw_surround_circle(self, radius: float):
-        pygame.draw.circle(self.screen, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
+        pygame.draw.circle(self.surface, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
         
     def update(self, action: np.ndarray):
         self.move(action)
+    
+    def reset(self):
+        self.x = SCREEN_WIDTH // 2
+        self.y = SCREEN_HEIGHT // 2
+        self.direction = pygame.Vector2(0, 0)
+        self.is_moving = False
+        if DISPLAY_PLAYER_TRAIL:
+            self.trail.clear()
         
     def set_movement_from_index(self, action: int):
         self.direction = self.directions[action]
@@ -71,25 +75,25 @@ class Player(pygame.sprite.Sprite):
         
     def direction_to_position(self, direction: pygame.Vector2) -> pygame.Vector2:
         if direction.x and direction.y:
-            x = self.x + direction.x * PLAYER_SPEED / self.SQRT_2
-            y = self.y + direction.y * PLAYER_SPEED / self.SQRT_2
+            x = self.x + direction.x * PLAYER_SPEED * UPDATE_DELTA_TIME / self.SQRT_2
+            y = self.y + direction.y * PLAYER_SPEED * UPDATE_DELTA_TIME / self.SQRT_2
         else:
-            x = self.x + direction.x * PLAYER_SPEED
-            y = self.y + direction.y * PLAYER_SPEED
+            x = self.x + direction.x * PLAYER_SPEED * UPDATE_DELTA_TIME
+            y = self.y + direction.y * PLAYER_SPEED * UPDATE_DELTA_TIME
         
         x, y = self.handle_screen_collision(x, y)
 
         return pygame.Vector2(x, y)
         
-    def move(self, action: np.ndarray):
-        if not self.game.bot.is_activate():
+    def move(self, action: np.ndarray = None):
+        if action is None:
             # user keyboard input
             self.input()
         else:
             self.set_movement_from_index(np.argmax(action))
             
         if self.direction.x or self.direction.y:
-            self.game.reward = 0
+            self.is_moving = True
 
         self.x, self.y = self.direction_to_position(self.direction)
         

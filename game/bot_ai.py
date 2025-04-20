@@ -3,11 +3,11 @@ import math
 import random
 import numpy as np
 from typing import TYPE_CHECKING
-from settings import DodgeMethod, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS
+from configs.settings import DodgeMethod, BOT_ACTION, FILTER_MOVE_INTO_WALL, SCAN_RADIUS
 from help_methods import draw_sector
 
 if TYPE_CHECKING:
-    from game import Game
+    from game.game import Game
 
 class GameBot:
     def __init__(self, game: "Game", method = DodgeMethod.FURTHEST_SAFE_DIRECTION):
