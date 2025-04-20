@@ -24,7 +24,6 @@ class Agent:
         self.memory = deque(maxlen=MAX_MEMORY)
         self.epsillon = EPSILON
         self.mode = TRAINING_MODE
-        self.game = None #TODO
         self.model = Model(28, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
         self.game = game
 
@@ -85,6 +84,7 @@ class Agent:
         # use simplified Bellman equation to calculate expected output
         target = self.model.forward(old_state)[2]
         Q_new = reward + GAMMA * np.max(self.model.forward(new_state)[2])
+        Q_new = np.clip(Q_new, -10000, 10000)
         target[np.argmax(action)] = Q_new
         return target
 
@@ -157,9 +157,6 @@ def perform():
 
         # restart game if game over
         if game_over:
-            agent.number_of_games += 1
-            if agent.number_of_games % 10 == 0:
-                agent.model.save()
             agent.restart_game()
 
         # use pygame to control FPS and UPS
