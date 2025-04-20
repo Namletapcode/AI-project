@@ -1,13 +1,10 @@
 import pygame
 import math
 import random
-import numpy as np
 from configs.game_config import BULLET_PATTERNS, SCREEN_HEIGHT, SCREEN_WIDTH, GAME_SPEED, DEFAULT_BULLET_SPEED
 from configs.bot_config import SCAN_RADIUS
 from game.bullet import Bullet
 from game.player import Player
-import time
-import copy
 
 class BulletManager:
     def __init__(self, player: "Player"):
@@ -112,8 +109,6 @@ class BulletManager:
 
         event["spawned"] = 0
         event["spawn_time"] = update_num + event["prop"].delay
-
-        
         
     def get_bullets_detail(self):
         return [(bullet.x, bullet.y, math.degrees(bullet.angle)) for bullet in self.bullets]
@@ -237,15 +232,10 @@ class BulletManager:
         return sector_flags
 
     def update(self, update_num: int):
-        self.bullets.update()
-
         for event in self.spawn_event:
             if update_num >= event["spawn_time"]:
                 self.create_bullet_type(*self.get_random_corner(), event, update_num)
         self.bullets.update()
-
-
-        
 
     def draw(self, screen):
         for bullet in self.bullets:

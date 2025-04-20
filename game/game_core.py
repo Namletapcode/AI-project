@@ -71,7 +71,6 @@ class Game:
     def restart_game(self):
         self.player.reset()
         self.bullet_manager = BulletManager(self.player)
-        self.enemy_x, self.enemy_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
         self.frame_index = 0
         self.reward = 0.1
         self.game_over = False
@@ -85,7 +84,6 @@ class Game:
         if not self.game_over:
             self.player.update(action)
             self.reward = 0.5 if not self.player.is_moving else 0.0 # reset every loop, only set to zero if move, -10 if got hit
-            self.bullet_manager.update()
             if self.bullet_manager.key == 0:
                 self.bullet_manager.update(update_num=self.update_counter)
             self.check_collision()
@@ -94,7 +92,6 @@ class Game:
         else:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_RETURN]:
-                self.game_over = False
                 self.restart_game()
 
     def draw(self, draw_extra: callable = None):

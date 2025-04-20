@@ -11,7 +11,7 @@ UPS =  BASE_UPS * GAME_SPEED        # Tốc độ cập nhật game (updates per
 dt_max = 3 / FPS
 
 PLAYER_SPEED = 200                  # Tốc độ di chuyển của player (pixel/s)
-DEFAULT_BULLET_SPEED = 80          # Tốc độ đạn (pixel/s)
+DEFAULT_BULLET_SPEED = 150          # Tốc độ đạn (pixel/s)
 
 DEFAULT_BULLET_RADIUS = 5
 BOX_SIZE = 500
