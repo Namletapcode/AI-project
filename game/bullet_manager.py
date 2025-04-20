@@ -8,7 +8,6 @@ from game.player import Player
 
 class BulletManager:
     def __init__(self, player: "Player"):
-        self.bullets = pygame.sprite.Group()
         self.player = player
         self.key = 0
         self.reset(0)
@@ -245,6 +244,7 @@ class BulletManager:
             bullet.draw(screen)
 
     def reset(self, update_count: int = 0):
+        self.bullets = pygame.sprite.Group()
         self.spawn_time = 0
         self.angle_offset = 0
         self.radius = 5
