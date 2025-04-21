@@ -7,7 +7,7 @@ from configs.game_config import DrawSectorMethod, DRAW_SECTOR_METHOD
 
 def draw_complex_sector(
     surface: pygame.Surface, point_x: int, point_y: int, index: int,
-    radius: float, num_angle_divisions: int = 16, num_radius_divisions: int = 3,
+    radius: float, num_angle_divisions: int = 8, num_radius_divisions: int = 3,
     color: tuple = (255, 255, 0), segments: int = 3):
     '''
     Vẽ một phần tử trong hình tròn được chia thành num_angle_divisions*num_radius_divisions phần.

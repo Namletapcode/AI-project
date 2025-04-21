@@ -67,7 +67,7 @@ class BotManager:
                 draw_sector(self.game.surface, self.game.player.x, 
                            self.game.player.y, radius, i, (255,255,0))
 
-    def _draw_complex_sectors(self, radius: int, num_angle_divisions: int = 16, 
+    def _draw_complex_sectors(self, radius: int, num_angle_divisions: int = 8, 
                             num_radius_divisions: int = 3):
         """Vẽ các sector phức tạp (chia theo cả góc và bán kính)"""
         bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)

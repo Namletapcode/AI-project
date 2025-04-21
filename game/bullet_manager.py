@@ -153,7 +153,7 @@ class BulletManager:
 
         Args:
             bullets: List of bullets to analyze
-            num_angle_divisions: Number of angular divisions (like 16 directions)
+            num_angle_divisions: Number of angular divisions (like 8 directions)
             num_radius_divisions: Number of radius divisions (rings around player)
 
         Returns:
@@ -176,15 +176,16 @@ class BulletManager:
                 continue
             
             # Xác định vòng (ring) chứa đạn
-            ring_index = int(distance / sector_radius)
+            ring_index = (num_radius_divisions - 1) if distance >= SCAN_RADIUS else int(distance / sector_radius)
             
             # Tính góc của viên đạn
             angle = math.atan2(-dy, dx)
-            # Chỉnh lại góc về phạm vi [0, 2*pi)
-            angle = (angle - start_angle) % (2 * math.pi)
             
-            # Xác định angle chứa đạn
-            angle_index = int(angle // sector_angle)
+            # Dịch trục quay trái π/8 để vùng 0 nằm giữa start_angle và start_angle + sector_angle
+            angle_shifted = (angle - start_angle) % (2 * math.pi)
+            
+            # Tính index vùng (mỗi vùng rộng π/4), đảm bảo kết quả trong [0, 7]
+            angle_index = int(angle_shifted // sector_angle) % 8
             
             # Convert vị trí 2D (ring, angle) thành index 1D
             region_index = ring_index * num_angle_divisions + angle_index

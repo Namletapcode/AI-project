@@ -19,6 +19,7 @@ class Game:
         self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
+        self.update_counter = 0
     
     def run(self):
         while True:
@@ -54,7 +55,6 @@ class Game:
         state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
         state[:len(sector_flags)] = sector_flags
         state[len(sector_flags):] = near_wall_info
-        state = state.reshape(28 if USE_COMPLEX_SCANNING else 12, 1)
         
         return state
     
@@ -104,10 +104,10 @@ class Game:
         self.player.draw()
         self.bullet_manager.draw(self.surface)
         # print(self.get_reward())
-        # score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
+        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         # time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
     
-        # self.surface.blit(score_text, (10, 10))
+        self.surface.blit(score_text, (10, 10))
         # self.surface.blit(time_text, (10, 40))
         pygame.display.flip()
 

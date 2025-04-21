@@ -5,6 +5,7 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from bot.deep_learning.vision_input.model import Model
 from bot.deep_learning.vision_input.helper import plot, get_screen_shot_gray_scale
+from bot.deep_learning.base_agent import BaseAgent
 from game.game_core import Game
 
 MAX_MEMORY = 10000
@@ -19,23 +20,18 @@ PERFORM_MODE = 2
 
 IMG_SIZE = 60 # 60 x 60 pixels^2
 
-class Agent:
+class Agent(BaseAgent):
 
     def __init__(self, game: Game):
-        self.number_of_games = 0
-        self.memory = deque(maxlen=MAX_MEMORY)
+        super().__init__(game)
         self.epsillon = EPSILON
         self.mode = TRAINING_MODE
         self.model = Model((IMG_SIZE ** 2) * 2, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
-        self.game = game
         self.reset_self_img()
 
     def reset_self_img(self):
         self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
         self.img_02 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
-
-    def set_mode(self, mode: int = TRAINING_MODE):
-        self.mode = mode
 
     def get_state(self) -> np.ndarray: # get game state. stack of two consecutive screenshot around player
         self.img_02 = get_screen_shot_gray_scale(self.game.player.x, self.game.player.y, IMG_SIZE)
@@ -43,7 +39,7 @@ class Agent:
         self.img_01 = self.img_02
         return state
 
-    def get_move(self, state: np.ndarray) -> np.ndarray:
+    def get_action(self, state: np.ndarray) -> np.ndarray:
         move = np.zeros((9, ), dtype=np.float64)
         if self.mode == TRAINING_MODE:
             # decise to take a random move or not
@@ -57,26 +53,14 @@ class Agent:
             # always use model to predict move in pridict move / always predict
             move[np.argmax(self.model.forward(state)[2])] = 1
         return move
-
-    def perform_action(self, action: np.ndarray): # call action api in game
-        self.game.take_action(action)
-
-    def get_reward(self) -> tuple[float, bool]: # return result: float, and game_over: bool
-        return self.game.get_reward()
-    
-    def get_score(self) -> int:
-        return self.game.score
     
     def restart_game(self):
         self.game.restart_game()
         self.reset_self_img()
 
-    def draw_game(self):
-        self.game.draw()
-
-    def train_short_memory(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray):
-        target = self.convert(old_state, action, reward, new_state)
-        self.model.train(old_state, target)
+    def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray):
+        target = self.convert(current_state, action, reward, next_state)
+        self.model.train(current_state, target)
 
     def train_long_memory(self):
         if len(self.memory) <= MAX_SAMPLE_SIZE:
@@ -85,16 +69,13 @@ class Agent:
         else:
             # else pick random 1000 states to re-train
             mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
-        for old_state, action, reward, new_state in mini_sample:
-            self.train_short_memory(old_state, action, reward, new_state)
+        for current_state, action, reward, next_state, game_over in mini_sample:
+            self.train_short_memory(current_state, action, reward, next_state)
 
-    def remember(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray):
-        self.memory.append((old_state, action, reward, new_state))
-
-    def convert(self, old_state: np.ndarray, action: np.ndarray, reward: float, new_state: np.ndarray) -> np.ndarray:
+    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray) -> np.ndarray:
         # use simplified Bellman equation to calculate expected output
-        target = self.model.forward(old_state)[2]
-        Q_new = reward + GAMMA * np.max(self.model.forward(new_state)[2])
+        target = self.model.forward(current_state)[2]
+        Q_new = reward + GAMMA * np.max(self.model.forward(next_state)[2])
         Q_new = np.clip(Q_new, -10000, 10000)
         target[np.argmax(action)] = Q_new
         return target
@@ -107,25 +88,25 @@ def train():
 
     while True:
         # get the current game state
-        old_state = agent.get_state()
+        current_state = agent.get_state()
 
         # get the move based on the state
-        action = agent.get_move(old_state)
+        action = agent.get_action(current_state)
 
         # perform action in game
         agent.perform_action(action)
 
         # get the new state after performed action
-        new_state = agent.get_state()
+        next_state = agent.get_state()
 
         # get the reward of the action
         reward, game_over = agent.get_reward()
 
         # train short memory with the action performed
-        agent.train_short_memory(old_state, action, reward, new_state)
+        agent.train_short_memory(current_state, action, reward, next_state)
 
         # remember the action and the reward
-        agent.remember(old_state, action, reward, new_state)
+        agent.remember(current_state, action, reward, next_state, game_over)
 
         # if game over then train long memory and start again
         if game_over:
@@ -158,7 +139,7 @@ def perform():
         state = agent.get_state()
 
         # get the model predict move
-        action = agent.get_move(state)
+        action = agent.get_action(state)
 
         # perform selected move
         agent.perform_action(action)

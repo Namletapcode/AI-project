@@ -198,7 +198,7 @@ class HeuristicDodgeBot(BaseBot):
                     self.surface, self.player.x, self.player.y,
                     radius, i, color, num_sectors)
     
-    def draw_complex_sectors(self, radius: int, num_angle_divisions: int = 16, num_radius_divisions: int = 3):
+    def draw_complex_sectors(self, radius: int, num_angle_divisions: int = 8, num_radius_divisions: int = 3):
         """Vẽ các sector phức tạp (chia theo cả góc và bán kính)"""
         bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
         sector_flags = self.game.bullet_manager.get_complex_regions(bullets_in_radius, num_angle_divisions, num_radius_divisions)
