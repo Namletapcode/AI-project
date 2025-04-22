@@ -1,21 +1,30 @@
 import matplotlib.pyplot as plt
-import win32gui
-import win32ui
-import win32con
-import numpy as np
 
 plt.ion()
 
-def plot(scores):
-    plt.clf()  # Clear current figure
-    plt.title('Training...')
+def plot_training_progress(scores, title='Training...'):
+    """
+    Plot training progress in real-time
+    
+    Args:
+        scores: List of scores to plot
+        title: Title of the plot
+    """
+    plt.clf()
+    plt.title(title)
     plt.xlabel('Number of Games')
     plt.ylabel('Score')
     plt.plot(scores, label='Score')
     plt.ylim(ymin=0)
-    plt.text(len(scores) - 1, scores[-1], str(scores[-1]))
+    if scores:  # Add current score if list not empty
+        plt.text(len(scores) - 1, scores[-1], str(scores[-1]))
     plt.legend()
-    plt.pause(0.05)  # Pause to allow the plot to update
+    plt.pause(0.05)
+
+import win32gui
+import win32ui
+import win32con
+import numpy as np
 
 def get_screen_shot_gray_scale(x: float, y: float, img_size: int) -> np.ndarray:
     """
@@ -66,10 +75,10 @@ def get_screen_shot_gray_scale(x: float, y: float, img_size: int) -> np.ndarray:
 
     return result
 
-# testing
+# For testing visualization
 if __name__ == '__main__':
-    import time
-    start = time.time()
-    temp = get_screen_shot_gray_scale(650 / 2, 650 / 2, 100)
-    end = time.time()
-    print(temp.shape, "Time:", end - start)
+    test_scores = []
+    for game in range(100):
+        score = game % 10 + (game // 10)
+        test_scores.append(score)
+        plot_training_progress(test_scores)

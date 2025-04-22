@@ -4,7 +4,7 @@ from collections import deque
 import sys, os, math
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 from bot.deep_learning.param_input.use_numpy.model import Model
-from utils.training_visualizer import plot_training_progress
+from utils.bot_helper import plot_training_progress
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
 
@@ -14,7 +14,7 @@ LEARNING_RATE = 0.01
 GAMMA = 0.9
 EPSILON = 1
 EPSILON_DECAY = 0.95
-MIN_EPSILON = 0.05
+MIN_EPSILON = 0.01
 TRAINING_MODE = 1
 PERFORM_MODE = 2
 
@@ -23,7 +23,6 @@ class Agent(BaseAgent):
     def __init__(self, game: Game):
         super().__init__(game)
         self.epsilon = EPSILON
-        self.mode = TRAINING_MODE
         self.model = Model(28, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
 
     def get_state(self) -> np.ndarray:
@@ -70,88 +69,84 @@ class Agent(BaseAgent):
         Q_new = np.clip(Q_new, -10000, 10000)
         target[np.argmax(action)] = Q_new
         return target
+    
+    def train(self):
+        self.set_mode(TRAINING_MODE)
 
-def train():
-    game = Game()
-    agent = Agent(game)
+        scores = []
 
-    scores = []
+        while True:
+            # get the current game state
+            current_state = self.get_state()
 
-    while True:
-        # get the current game state
-        current_state = agent.get_state()
+            # get the move based on the state
+            action = self.get_action(current_state)
 
-        # get the move based on the state
-        action = agent.get_action(current_state)
+            # perform action in game
+            self.perform_action(action)
 
-        # perform action in game
-        agent.perform_action(action)
+            # get the new state after performed action
+            next_state = self.get_state()
 
-        # get the new state after performed action
-        next_state = agent.get_state()
+            # get the reward of the action
+            reward, game_over = self.get_reward()
 
-        # get the reward of the action
-        reward, game_over = agent.get_reward()
+            # train short memory with the action performed
+            self.train_short_memory(current_state, action, reward, next_state)
 
-        # train short memory with the action performed
-        agent.train_short_memory(current_state, action, reward, next_state)
+            # remember the action and the reward
+            self.remember(current_state, action, reward, next_state, game_over)
 
-        # remember the action and the reward
-        agent.remember(current_state, action, reward, next_state, game_over)
+            # if game over then train long memory and start again
+            if game_over:
+                # reduce epsilon / percentage of random move
+                self.epsilon *= EPSILON_DECAY
+                self.epsilon = max(self.epsilon, MIN_EPSILON)
 
-        # if game over then train long memory and start again
-        if game_over:
-            # reduce epsilon / percentage of random move
-            agent.epsilon *= EPSILON_DECAY
-            agent.epsilon = max(agent.epsilon, MIN_EPSILON)
+                # increase number of game and train long memory / re-train experience before start new game
+                self.number_of_games += 1
+                self.train_long_memory()
 
-            # increase number of game and train long memory / re-train experience before start new game
-            agent.number_of_games += 1
-            agent.train_long_memory()
+                if self.number_of_games % 10 == 0:
+                    # save before start new game
+                    # agent.model.save()
+                    pass
 
-            if agent.number_of_games % 10 == 0:
-                # save before start new game
-                # agent.model.save()
-                pass
+                # save the score to plot
+                scores.append(self.get_score())
+                plot_training_progress(scores)
 
-            # save the score to plot
-            scores.append(agent.get_score())
-            plot_training_progress(scores)
+                self.restart_game()
 
-            agent.restart_game()
+    def perform(self):
+        self.set_mode(PERFORM_MODE)
 
-        agent.game.clock.tick(60)
+        while True:
+            # get the current game state
+            state = self.get_state()
 
-def perform():
-    game = Game()
-    agent = Agent(game)
-    agent.set_mode(PERFORM_MODE)
+            # get the model predict move
+            action = self.get_action(state)
 
-    while True:
-        # get the current game state
-        state = agent.get_state()
+            # perform selected move
+            self.perform_action(action)
 
-        # get the model predict move
-        action = agent.get_action(state)
+            # check if game over or not
+            _, game_over = self.get_reward()
 
-        # perform selected move
-        agent.perform_action(action)
+            # restart game if game over
+            if game_over:
+                self.restart_game()
 
-        # check if game over or not
-        _, game_over = agent.get_reward()
-
-        # restart game if game over
-        if game_over:
-            agent.restart_game()
-
-        # use pygame to control FPS and UPS
-        agent.game.clock.tick(60)
-
+            # use pygame to control FPS and UPS
+            self.game.clock.tick(60)
 
 if __name__ == '__main__':
-    mode = TRAINING_MODE
+    agent = Agent(Game())
+
+    mode = PERFORM_MODE
 
     if mode == TRAINING_MODE:
-        train()
+        agent.train()
     elif mode == PERFORM_MODE:
-        perform()
+        agent.perform()

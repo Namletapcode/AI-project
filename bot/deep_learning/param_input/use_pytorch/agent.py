@@ -7,7 +7,7 @@ import numpy as np
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
 from bot.deep_learning.param_input.use_pytorch.model import Linear_QNet, QTrainer
-from utils.training_visualizer import plot_training_progress
+from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 256
