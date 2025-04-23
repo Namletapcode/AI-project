@@ -72,7 +72,7 @@ class Game:
             near_wall_info = self.player.get_near_wall_info()
             
             # Combine states into single array
-            state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float32)
+            state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
             state[:len(sector_flags)] = sector_flags
             state[len(sector_flags):] = near_wall_info
             

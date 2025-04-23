@@ -17,7 +17,7 @@ class DodgeAlgorithm(Enum):
 BOT_ACTION = True               # True if bot is allowed to take action : set by dev
 BOT_DRAW = False                # True if bot is allowed to draw : set by dev
 FILTER_MOVE_INTO_WALL = True
-WALL_CLOSE_RANGE = 10
+WALL_CLOSE_RANGE = 30
 
 USE_WALL_PENALTY = True         # Phạt khi gần tường
 # Mức độ ảnh hưởng của penalty
