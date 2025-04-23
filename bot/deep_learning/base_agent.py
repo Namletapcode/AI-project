@@ -11,8 +11,6 @@ EPSILON = 1
 EPSILON_DECAY = 0.95
 MIN_EPSILON = 0.05
 STOP_ON_REWARD = 1000
-TRAINING_MODE = 1
-PERFORM_MODE = 2
 
 class BaseAgent:
     """
@@ -24,13 +22,13 @@ class BaseAgent:
         self.number_of_games = 0
         self.memory = deque(maxlen=MAX_MEMORY)
         self.epsilon = EPSILON
-        self.mode = TRAINING_MODE
+        self.mode = None
         self.model = None  # Placeholder for model, to be defined in subclasses
         self.trainer = None  # Placeholder for trainer, to be defined in subclasses
         self.game = game
         self.stop_on_reward = STOP_ON_REWARD
 
-    def set_mode(self, mode: int = TRAINING_MODE):
+    def set_mode(self, mode: str):
         """
         Set the mode of the agent (training or performing).
         """

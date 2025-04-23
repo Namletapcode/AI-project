@@ -2,7 +2,10 @@ import pygame
 import sys
 import math
 import numpy as np
-from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, FPS, dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE)
+from configs.game_config import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, FPS, UPS,
+    dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
+)
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS
 from game.bullet_manager import BulletManager
 from game.player import Player
@@ -21,17 +24,31 @@ class Game:
         self.font=pygame.font.Font(None, 36)
         self.update_counter = 0
     
-    def run(self):
+    def run(self, bot, draw_extra: callable = None):
+        update_timer = 0
+        update_interval = 1.0 / UPS
+        first_frame = True
+        is_heuristic_bot = getattr(bot, "is_heuristic", False)
+        if not is_heuristic_bot:
+            bot.set_mode("perform")
+            bot.load_model()
         while True:
-            self.clock.tick(FPS)
-            self.update()
-            self.draw()
+            frame_time = min(self.clock.tick(FPS) / 1000, dt_max)
+            update_timer += frame_time
+            # Use first_frame to update immediately (to avoid not being able to update before drawing)
+            while update_timer >= update_interval or first_frame:
+                current_state = self.get_state(is_heuristic_bot)
+                action = bot.get_action(current_state)
+                self.update(action)
+                update_timer -= update_interval
+                first_frame = False
+            self.draw(draw_extra)
 
     def take_action(self, action: np.ndarray): # for AI agent
         self.update(action)
         self.draw()
 
-    def get_state(self) -> np.ndarray:
+    def get_state(self, is_heuristic: bool = False):
         """
         Get current game state as numpy array.
         
@@ -44,18 +61,21 @@ class Game:
             - Last 4 elements: Wall proximity flags [top, right, bottom, left]
               - Value 1 means near wall, 0 means not near wall
         """
-        bullets_in_radius = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
-        if USE_COMPLEX_SCANNING:
-            sector_flags = self.bullet_manager.get_complex_regions(bullets_in_radius)
+        if is_heuristic:
+            state = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
         else:
-            sector_flags = self.bullet_manager.get_simple_regions(bullets_in_radius)
-        near_wall_info = self.player.get_near_wall_info()
-        
-        # Combine states into single array
-        state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
-        state[:len(sector_flags)] = sector_flags
-        state[len(sector_flags):] = near_wall_info
-        
+            bullets_in_radius = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
+            if USE_COMPLEX_SCANNING:
+                sector_flags = self.bullet_manager.get_complex_regions(bullets_in_radius)
+            else:
+                sector_flags = self.bullet_manager.get_simple_regions(bullets_in_radius)
+            near_wall_info = self.player.get_near_wall_info()
+            
+            # Combine states into single array
+            state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float32)
+            state[:len(sector_flags)] = sector_flags
+            state[len(sector_flags):] = near_wall_info
+            
         return state
     
     def get_reward(self) -> tuple[float, bool]:

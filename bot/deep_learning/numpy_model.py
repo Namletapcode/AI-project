@@ -1,25 +1,20 @@
 import numpy as np
 import os
-import sys
 
-weight_1_path = 'bot/deep_learning/vision_input/weight_1.bin'
-bias_1_path = 'bot/deep_learning/vision_input/bias_1.bin'
-weight_2_path = 'bot/deep_learning/vision_inputweight_2.bin'
-bias_2_path = 'bot/deep_learning/vision_input/bias_2.bin'
+model_file = 'bot/model/numpy_model.npz'
 
 class Model:
 
     def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.01):
 
         self.learning_rate = learning_rate
-
-        if os.path.exists(weight_1_path) and os.path.exists(bias_1_path) and os.path.exists(weight_2_path) and os.path.exists(bias_2_path):
-            # load existed weight and bias 
-            self.weight_1   = np.fromfile(weight_1_path, dtype=np.float64).reshape(hidden_layer, input_layer)
-            self.bias_1     = np.fromfile(bias_1_path, dtype=np.float64).reshape(hidden_layer, 1)
-            self.weight_2   = np.fromfile(weight_2_path, dtype=np.float64).reshape(output_layer, hidden_layer)
-            self.bias_2     = np.fromfile(bias_2_path, dtype=np.float64).reshape(output_layer, 1)
-
+        
+        self.model_path = None
+        folder_path = os.path.dirname(model_file)
+        os.makedirs(folder_path, exist_ok=True)
+        
+        if os.path.exists(model_file):
+            self.load()
         else:
             # generate random weight and bias with all element between -0.5 and 0.5
             self._random_weight_and_bias(input_layer, hidden_layer, output_layer)
@@ -52,13 +47,6 @@ class Model:
         self.weight_2       = self.weight_2 - self.learning_rate * delta_weight_2
         self.bias_2         = self.bias_2 - self.learning_rate * delta_bias_2
 
-    def save(self) -> None:
-        # save weight and bias
-        self.weight_1.tofile(weight_1_path)
-        self.bias_1.tofile(bias_1_path)
-        self.weight_2.tofile(weight_2_path)
-        self.bias_2.tofile(bias_2_path)
-
     def _ReLU(self, A: np.ndarray) -> np.ndarray:
         return np.maximum(0, A)
     
@@ -69,4 +57,22 @@ class Model:
         # train a single data / train short memory
         raw_hidden_output, act_hidden_output, raw_output = self.forward(input)
         self._backpropagation(raw_hidden_output, act_hidden_output, raw_output, input, expected_output)
+    
+    def set_model_path(self, model_path: str) -> None:
+        self.model_path = model_path
+    
+    def save(self) -> None:
+        np.savez(self.model_path,
+            weight_1=self.weight_1,
+            bias_1=self.bias_1,
+            weight_2=self.weight_2,
+            bias_2=self.bias_2)
+    
+    def load(self) -> None:
+        data = np.load(self.model_path)
         
+        # Gán lại trọng số và bias
+        self.weight_1 = data["weight_1"]
+        self.bias_1 = data["bias_1"]
+        self.weight_2 = data["weight_2"]
+        self.bias_2 = data["bias_2"]

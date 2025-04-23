@@ -1,61 +1,52 @@
 import numpy as np
 import random
-from collections import deque
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from bot.deep_learning.vision_input.model import Model
-from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale
-from bot.deep_learning.base_agent import BaseAgent
+# import sys, os
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from bot.deep_learning.numpy_model import Model
+from utils.bot_helper import plot_training_progress
 from game.game_core import Game
+from bot.deep_learning.base_agent import BaseAgent
 
-MAX_MEMORY = 10000
+MAX_MEMORY = 100000
 MAX_SAMPLE_SIZE = 1000
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.01
 GAMMA = 0.9
 EPSILON = 1
-EPSILON_DECAY = 0.999
+EPSILON_DECAY = 0.95
 MIN_EPSILON = 0.01
-TRAINING_MODE = 1
-PERFORM_MODE = 2
 
-IMG_SIZE = 60 # 60 x 60 pixels^2
+model_path = 'bot/model/param_numpy_model.npz'
 
-class Agent(BaseAgent):
+class ParamNumpyAgent(BaseAgent):
 
     def __init__(self, game: Game):
         super().__init__(game)
-        self.epsillon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
-        self.reset_self_img()
+        self.epsilon = EPSILON
+        self.model = Model(28, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model.set_model_path(model_path)
 
-    def reset_self_img(self):
-        self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
-        self.img_02 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
-
-    def get_state(self) -> np.ndarray: # get game state. stack of two consecutive screenshot around player
-        self.img_02 = get_screen_shot_gray_scale(self.game.player.x, self.game.player.y, IMG_SIZE)
-        state = np.concatenate((self.img_01, self.img_02), axis=0)
-        self.img_01 = self.img_02
-        return state
+    def get_state(self) -> np.ndarray:
+        """
+        Get the current game state and reshape it to 28x1 for model input
+        example: array([1, 1, 0, 0, 0, 1, 0, ...0])
+        """
+        state = self.game.get_state(is_heuristic=False)
+        return state.reshape(len(state), 1)
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
-        move = np.zeros((9, ), dtype=np.float64)
-        if self.mode == TRAINING_MODE:
-            # decise to take a random move or not
-            if random.random() < self.epsillon:
-                # if yes pick a random move
-                move[random.randint(0, 8)] = 1
+        action = np.zeros((9, ), dtype=np.float64)
+        if self.mode == "training":
+            # decise to take a random action or not
+            if random.random() < self.epsilon:
+                # if yes pick a random action
+                action[random.randint(0, 8)] = 1
             else:
-                # if not model will predict the move
-                move[np.argmax(self.model.forward(state)[2])] = 1
-        elif self.mode == PERFORM_MODE:
-            # always use model to predict move in pridict move / always predict
-            move[np.argmax(self.model.forward(state)[2])] = 1
-        return move
-    
-    def restart_game(self):
-        self.game.restart_game()
-        self.reset_self_img()
+                # if not model will predict the action
+                action[np.argmax(self.model.forward(state)[2])] = 1
+        elif self.mode == "perform":
+            # always use model to predict action in pridict action / always predict
+            action[np.argmax(self.model.forward(state)[2])] = 1
+        return action
 
     def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray):
         target = self.convert(current_state, action, reward, next_state)
@@ -80,7 +71,7 @@ class Agent(BaseAgent):
         return target
     
     def train(self):
-        self.set_mode(TRAINING_MODE)
+        self.set_mode("training")
 
         scores = []
 
@@ -109,8 +100,8 @@ class Agent(BaseAgent):
             # if game over then train long memory and start again
             if game_over:
                 # reduce epsilon / percentage of random move
-                self.epsillon *= EPSILON_DECAY
-                self.epsillon = max(self.epsillon, MIN_EPSILON)
+                self.epsilon *= EPSILON_DECAY
+                self.epsilon = max(self.epsilon, MIN_EPSILON)
 
                 # increase number of game and train long memory / re-train experience before start new game
                 self.number_of_games += 1
@@ -118,7 +109,7 @@ class Agent(BaseAgent):
 
                 if self.number_of_games % 10 == 0:
                     # save before start new game
-                    # agent.model.save()
+                    self.model.save()
                     pass
 
                 # save the score to plot
@@ -128,7 +119,7 @@ class Agent(BaseAgent):
                 self.restart_game()
 
     def perform(self):
-        self.set_mode(PERFORM_MODE)
+        self.set_mode("perform")
 
         while True:
             # get the current game state
@@ -149,12 +140,16 @@ class Agent(BaseAgent):
 
             # use pygame to control FPS and UPS
             self.game.clock.tick(60)
+    
+    def load_model(self):
+        self.model.load()
 
 if __name__ == '__main__':
-    agent = Agent(Game())
-    mode = PERFORM_MODE
+    agent = ParamNumpyAgent(Game())
 
-    if mode == TRAINING_MODE:
+    mode = "training"
+
+    if mode == "training":
         agent.train()
-    elif mode == PERFORM_MODE:
+    elif mode == "perform":
         agent.perform()

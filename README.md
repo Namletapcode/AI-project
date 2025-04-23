@@ -6,9 +6,6 @@ Game né đạn 2D được xây dựng bằng Pygame, với các mẫu đạn �
 
 ```
 .
-├── agent_01/                 # AI Agent sử dụng Deep Q-Learning (đang thử nghiệm)
-│   ├── agent.py              # Agent chính với train/perform mode
-│   └── model.py              # Neural network model
 ├── bot/               
 │   ├── base_bot.py           # Lớp bot cơ sở
 │   ├── bot_manager.py        # Factory pattern quản lý các loại bot

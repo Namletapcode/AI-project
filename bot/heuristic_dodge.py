@@ -10,6 +10,7 @@ from bot.base_bot import BaseBot
 from game.game_core import Game
 
 class HeuristicDodgeBot(BaseBot):
+    is_heuristic = True
     def __init__(self, game: "Game", method = DodgeAlgorithm.FURTHEST_SAFE_DIRECTION):
         super().__init__(game)
         self.method = method
@@ -18,13 +19,11 @@ class HeuristicDodgeBot(BaseBot):
         # Hành động: 8 hướng + đứng yên (index 8)
         self.action = np.array([0,0,0,0,0,0,0,0,1])
         
-    def get_action(self) -> np.ndarray:
-        # Lấy danh sách các viên đạn trong phạm vi quét
-        radius = SCAN_RADIUS
-        bullets_near_player = self.game.bullet_manager.get_bullet_in_range(radius)
+    def get_action(self, state: list) -> np.ndarray:
+        # state: list bullet in SCAN_RADIUS
         self.reset_action()
 
-        if len(bullets_near_player) == 0:
+        if len(state) == 0:
             self.reset_action()
             return self.action
 
@@ -41,7 +40,7 @@ class HeuristicDodgeBot(BaseBot):
         # lambda *_: 8 là một hàm nhận bất kỳ số lượng tham số nào nhưng luôn trả về 8 (vô hiệu hóa hành động).
         func = method_map.get(self.method, lambda *_: 8)
         
-        best_direction_index = func(bullets_near_player)
+        best_direction_index = func(state)
 
         self.action[best_direction_index] = 1
         self.action[8] = 0

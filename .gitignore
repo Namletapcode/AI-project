@@ -1,13 +1,4 @@
 __pycache__/
+model
 tempCodeRunnerFile.py
 test.py
-bot/deep_learning/param_input/use_numpy/bias_1.bin
-bot/deep_learning/param_input/use_numpy/bias_2.bin
-bot/deep_learning/param_input/use_numpy/weight_1.bin
-bot/deep_learning/param_input/use_numpy/weight_2.bin
-bot/deep_learning/vision_input/bias_1.bin
-bot/deep_learning/vision_input/bias_2.bin
-bot/deep_learning/vision_input/weight_1.bin
-bot/deep_learning/vision_input/weight_2.bin
-model/model.pth
-model/pytorch_model.pth

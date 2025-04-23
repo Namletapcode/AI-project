@@ -4,25 +4,33 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+model_file = 'bot/model/pytorch_model.pth'
+
 class Linear_QNet(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_dim=256):
         super().__init__()
+        
+        self.model_path = None
+        folder_path = os.path.dirname(model_file)
+        os.makedirs(folder_path, exist_ok=True)
+        
         self.linear1 = nn.Linear(state_dim, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, action_dim)
-
-    def forward(self, x):
+    
+    def forward(self, x) -> torch.Tensor:
         x = F.relu(self.linear1(x))
         x = self.linear2(x)
         return x
 
-    def save(self, file_name='model.pth'):
-        model_folder_path = './model'
-        if not os.path.exists(model_folder_path):
-            os.makedirs(model_folder_path)
+    def set_model_path(self, model_path):
+        self.model_path = model_path
+    
+    def save(self) -> None:
+        torch.save(self.state_dict(), self.model_path)
+    
+    def load(self) -> None:
+        self.load_state_dict(torch.load(self.model_path))
 
-        file_name = os.path.join(model_folder_path, file_name)
-        torch.save(self.state_dict(), file_name)
-        
 class QTrainer:
     def __init__(self, model, lr, gamma):
         self.lr = lr

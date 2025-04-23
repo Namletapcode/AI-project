@@ -1,34 +1,39 @@
 import numpy as np
 from configs.bot_config import (
-    DodgeAlgorithm, ALGORITHM_CATEGORIES, DODGE_ALGORITHM,
+    DodgeAlgorithm, DODGE_ALGORITHM,
     SCAN_RADIUS, USE_COMPLEX_SCANNING, BOT_ACTION, BOT_DRAW)
 from utils.draw_utils import draw_sector, draw_complex_sector
 from bot.heuristic_dodge import HeuristicDodgeBot
+from bot.deep_learning.param_input.numpy_agent import ParamNumpyAgent
+from bot.deep_learning.param_input.pytorch_agent import ParamTorchAgent
 
 class BotManager:
     def __init__(self, game):
         self.game = game
         self.current_bot = None
-    
-    def get_action(self):
-        """Get action from current bot"""
-        if self.current_bot and BOT_ACTION:
-            return self.current_bot.get_action()
-        return None
         
     def create_bot(self, algorithm: DodgeAlgorithm = DODGE_ALGORITHM):
         """Create a bot based on the specified dodge algorithm."""
-        category = ALGORITHM_CATEGORIES.get(algorithm)
-        
-        if category == 'heuristic':
+        if algorithm in [
+            DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
+            DodgeAlgorithm.LEAST_DANGER_PATH,
+            DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
+            DodgeAlgorithm.RANDOM_SAFE_ZONE,
+            DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION
+        ]:
             self.current_bot = HeuristicDodgeBot(self.game, algorithm)
-        elif category == 'deep_learning':
-            # self.current_bot = DeepLearningBot(self.game, algorithm)  # Future
-            raise NotImplementedError("Deep learning bots not implemented yet")
         else:
-            raise ValueError(f"Unknown algorithm category for {algorithm}")
-            
+            if algorithm == DodgeAlgorithm.DL_PARAM_INPUT_NUMPY:
+                self.current_bot = ParamNumpyAgent(self.game)
+            elif algorithm == DodgeAlgorithm.DL_PARAM_INPUT_TORCH:
+                self.current_bot = ParamTorchAgent(self.game)
         return self.current_bot
+    
+    def get_action(self, state) -> np.ndarray:
+        """Get action from current bot"""
+        if self.current_bot and BOT_ACTION:
+            return self.current_bot.get_action(state)
+        return None
 
     def draw_bot_vision(self):
         """Vẽ vision của bot và hướng di chuyển"""
@@ -51,8 +56,9 @@ class BotManager:
         self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128,0,128))
         
         # Vẽ hướng di chuyển của bot
-        if hasattr(self.current_bot, 'action'):
-            best_direction_index = np.argmax(self.current_bot.action)
+        bot_direction = self.get_action()
+        if bot_direction:
+            best_direction_index = np.argmax(bot_direction)
             if best_direction_index != 8:
                 draw_sector(surface, player.x, player.y, 
                            50, best_direction_index, (0, 255, 0))
