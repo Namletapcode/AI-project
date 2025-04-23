@@ -1,8 +1,8 @@
 import numpy as np
 import random
-# import sys, os
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from bot.deep_learning.numpy_model import Model
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from bot.deep_learning.models.numpy_model import Model
 from utils.bot_helper import plot_training_progress
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
@@ -15,7 +15,7 @@ EPSILON = 1
 EPSILON_DECAY = 0.95
 MIN_EPSILON = 0.01
 
-model_path = 'bot/model/param_numpy_model.npz'
+model_path = 'saved_model/param_numpy_model.npz'
 
 class ParamNumpyAgent(BaseAgent):
 
@@ -110,7 +110,6 @@ class ParamNumpyAgent(BaseAgent):
                 if self.number_of_games % 10 == 0:
                     # save before start new game
                     self.model.save()
-                    pass
 
                 # save the score to plot
                 scores.append(self.get_score())

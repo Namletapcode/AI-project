@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
-from bot.deep_learning.pytorch_model import Linear_QNet, QTrainer
+from bot.deep_learning.models.pytorch_model import Linear_QNet, QTrainer
 from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100_000
@@ -16,7 +16,7 @@ EPSILON_DECAY = 0.998
 MIN_EPSILON = 0.1
 NETWORK_UPDATE_FREQ = 500
 
-model_path = 'bot/model/param_pytorch_model.pth'
+model_path = 'saved_model/param_pytorch_model.pth'
 
 class ParamTorchAgent(BaseAgent):
 

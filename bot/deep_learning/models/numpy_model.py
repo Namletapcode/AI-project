@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-model_file = 'bot/model/numpy_model.npz'
+model_file = 'saved_model/numpy_model.npz'
 
 class Model:
 

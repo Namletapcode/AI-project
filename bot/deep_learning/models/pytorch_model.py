@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
-model_file = 'bot/model/pytorch_model.pth'
+model_file = 'saved_model/pytorch_model.pth'
 
 class Linear_QNet(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_dim=256):
