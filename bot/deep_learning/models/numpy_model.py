@@ -3,12 +3,15 @@ import os
 
 class Model:
 
-    def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.001, model_path='saved_model/param_numpy_model.npz'):
+    def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.001, model_path='saved_model/param_numpy_model.npz', load_saved_model: bool = True):
 
         self.learning_rate = learning_rate
         self.model_path = model_path
         
-        if os.path.exists(self.model_path):
+        folder_path = os.path.dirname(self.model_path)
+        os.makedirs(folder_path, exist_ok=True)
+        
+        if load_saved_model and os.path.exists(self.model_path):
             self.load()
         else:
             # generate random weight and bias with all element between -0.5 and 0.5

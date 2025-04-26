@@ -11,6 +11,8 @@ if __name__ == "__main__":
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
 from bot.deep_learning.models.pytorch_model import Linear_QNet, QTrainer
+from bot.heuristic_dodge import HeuristicDodgeBot
+from configs.bot_config import DodgeAlgorithm
 from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100_000
@@ -22,24 +24,33 @@ EPSILON_DECAY = 0.998
 MIN_EPSILON = 0.1
 NETWORK_UPDATE_FREQ = 500
 
+HEURISTIC_METHOD = DodgeAlgorithm.LEAST_DANGER_PATH
+IMITATION_PROBABILITY = 0.2 # 20% action selected based on heuristic_bot
+
 model_path = 'saved_model/param_pytorch_model.pth'
 
 class ParamTorchAgent(BaseAgent):
 
-    def __init__(self, game: Game):
+    def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        self.policy_net = Linear_QNet(28, 9).to(self.device)
-        self.policy_net.set_model_path(model_path) # Only save and update policy
+        self.policy_net = Linear_QNet(
+            28, 9, model_path=model_path, load_saved_model=load_saved_model
+            ).to(self.device)
+        #warning: the number of neurals in first layer must match the size of game.get_state()
         
-        self.target_net = Linear_QNet(28, 9).to(self.device)
+        self.target_net = Linear_QNet(28, 9, load_saved_model=False).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict()) # Load the weights from policy_net to target_net
         
         self.trainer = QTrainer(self.policy_net, lr=LEARNING_RATE, gamma=GAMMA)
         self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 1000 steps
-    
-    def train(self) -> None:
+        
+        self.heuristic_bot = HeuristicDodgeBot(game, HEURISTIC_METHOD)
+        self.imitation_prob = IMITATION_PROBABILITY
+        
+    def train(self, render: bool = False) -> None:
+        self.set_mode("train")
         rewards_per_episode = []
         scores_per_episode = []
         best_reward = -999999
@@ -72,7 +83,7 @@ class ParamTorchAgent(BaseAgent):
                     device=self.device
                 )
                 
-                self.perform_action(action)
+                self.perform_action(action, render)
             
                 next_state = self.get_state()
                 
@@ -119,7 +130,7 @@ class ParamTorchAgent(BaseAgent):
             plot_training_progress(scores_per_episode)
             self.epsilon = max(MIN_EPSILON, self.epsilon * EPSILON_DECAY)
     
-    def perform(self):
+    def perform(self, render: bool = True):
         """
         Use trained model to play game
         
@@ -143,7 +154,7 @@ class ParamTorchAgent(BaseAgent):
             action = self.get_action(current_state)
             
             # Perform action
-            self.perform_action(action)
+            self.perform_action(action, render)
             
             # Check if game over
             _, game_over = self.get_reward()
@@ -160,11 +171,14 @@ class ParamTorchAgent(BaseAgent):
         )
         action = np.zeros(9, dtype=np.float32)
         # random moves: tradeoff exploration / exploitation
-        if self.mode == "training":
+        if self.mode == "train":
             # decise to take a random move or not
             if random.random() < self.epsilon:
-                # if yes pick a random move
-                action[random.randint(0, 8)] = 1
+                if random.random() < self.imitation_prob:
+                    action = self.heuristic_bot.get_action(self.game.get_state(is_heuristic=True))
+                else:
+                    # if yes pick a random move
+                    action[random.randint(0, 8)] = 1
             else:
                 # if not model will predict the move
                 with torch.no_grad(): # eliminate gradient calculation

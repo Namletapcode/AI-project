@@ -3,11 +3,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')
 from bot.supervised_learning.model import Model
 from bot.heuristic_dodge import HeuristicDodgeBot
 from game.game_core import Game
+from bot.deep_learning.base_agent import BaseAgent
 import numpy as np
 
 LEARNING_RATE = 0.001
 
-class Supervised_Agent:
+class Supervised_Agent(BaseAgent):
     def __init__(self):
         self.game = Game()
         self.model = Model(28, 256, 9, LEARNING_RATE)
@@ -47,7 +48,7 @@ class Supervised_Agent:
     def reset_game(self):
         self.game.restart_game()
     
-    def train(self):
+    def train(self, render: bool = False):
 
         while True:
 
@@ -55,7 +56,7 @@ class Supervised_Agent:
 
             coach_action = self.get_coach_action()
 
-            self.perform_action(coach_action)
+            self.perform_action(coach_action, render)
 
             game_over = self.is_game_over()
 
@@ -70,7 +71,7 @@ class Supervised_Agent:
                     self.save()
                 self.reset_game()
 
-    def perform(self):
+    def perform(self, render:bool = True):
         
         while True:
 
@@ -78,7 +79,7 @@ class Supervised_Agent:
 
             agent_action = self.get_action(state)
 
-            self.perform_action(agent_action)
+            self.perform_action(agent_action, render)
 
             game_over = self.is_game_over()
 

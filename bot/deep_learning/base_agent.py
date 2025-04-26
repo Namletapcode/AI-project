@@ -48,11 +48,14 @@ class BaseAgent:
         """
         raise NotImplementedError("This method should be implemented in subclasses.")
     
-    def perform_action(self, action: np.ndarray):
+    def perform_action(self, action: np.ndarray, render: bool = True):
         """
         Perform the given action in the game.
         """
-        self.game.take_action(action)
+        self.game.update(action)
+        if render:
+            self.game.draw()
+        
     
     def get_reward(self) -> tuple[float, bool]:
         """

@@ -24,26 +24,32 @@ class Game:
         self.font=pygame.font.Font(None, 36)
         self.update_counter = 0
     
-    def run(self, bot, draw_extra: callable = None):
+    def run(self, bot, mode: str = "perform", render: bool = True, draw_extra: callable = None):
         update_timer = 0
         update_interval = 1.0 / UPS
         first_frame = True
         is_heuristic_bot = getattr(bot, "is_heuristic", False)
-        if not is_heuristic_bot:
-            bot.set_mode("perform")
-            bot.load_model()
-        while True:
-            frame_time = min(self.clock.tick(FPS) / 1000, dt_max)
-            update_timer += frame_time
-            # Use first_frame to update immediately (to avoid not being able to update before drawing)
-            while update_timer >= update_interval or first_frame:
-                current_state = self.get_state(is_heuristic_bot)
-                action = bot.get_action(current_state)
-                self.update(action)
-                update_timer -= update_interval
-                first_frame = False
-            self.draw(draw_extra)
-
+        is_numpy_agent = bot.__class__.__name__.lower().find("numpy") != -1
+        if mode == "perform":
+            if not is_heuristic_bot:
+                bot.set_mode("perform")
+                bot.load_model()
+            while True:
+                frame_time = min(self.clock.tick(FPS) / 1000, dt_max)
+                update_timer += frame_time
+                # Use first_frame to update immediately (to avoid not being able to update before drawing)
+                while update_timer >= update_interval or first_frame:
+                    current_state = self.get_state(is_heuristic_bot)
+                    if is_numpy_agent:
+                        current_state = current_state.reshape(len(current_state), 1)
+                    action = bot.get_action(current_state)
+                    self.update(action)
+                    update_timer -= update_interval
+                    first_frame = False
+                if render:
+                    self.draw(draw_extra)
+        else:
+            bot.train(render)
     def take_action(self, action: np.ndarray): # for AI agent
         self.update(action)
         self.draw()

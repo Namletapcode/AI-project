@@ -39,7 +39,7 @@ class Agent(BaseAgent):
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         move = np.zeros((9, ), dtype=np.float64)
-        if self.mode == "training":
+        if self.mode == "train":
             # decise to take a random move or not
             if random.random() < self.epsillon:
                 # if yes pick a random move
@@ -82,8 +82,8 @@ class Agent(BaseAgent):
             target[np.argmax(action)] = reward
         return target
     
-    def train(self):
-        self.set_mode("training")
+    def train(self, render: bool = False):
+        self.set_mode("train")
 
         scores = []
 
@@ -95,7 +95,7 @@ class Agent(BaseAgent):
             action = self.get_action(current_state)
 
             # perform action in game
-            self.perform_action(action)
+            self.perform_action(action, render)
 
             # get the new state after performed action
             next_state = self.get_state()
@@ -130,7 +130,7 @@ class Agent(BaseAgent):
 
                 self.restart_game()
 
-    def perform(self):
+    def perform(self, render: bool = True):
         self.set_mode("perform")
 
         while True:
@@ -141,7 +141,7 @@ class Agent(BaseAgent):
             action = self.get_action(state)
 
             # perform selected move
-            self.perform_action(action)
+            self.perform_action(action, render)
 
             # check if game over or not
             _, game_over = self.get_reward()
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     agent = Agent(Game())
     mode = "perform"
 
-    if mode == "training":
+    if mode == "train":
         agent.train()
     elif mode == "perform":
         agent.perform()

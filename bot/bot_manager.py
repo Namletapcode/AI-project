@@ -12,7 +12,7 @@ class BotManager:
         self.game = game
         self.current_bot = None
         
-    def create_bot(self, algorithm: DodgeAlgorithm = DODGE_ALGORITHM):
+    def create_bot(self, algorithm: DodgeAlgorithm = DODGE_ALGORITHM, load_saved_model: bool = False):
         """Create a bot based on the specified dodge algorithm."""
         if algorithm in [
             DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
@@ -24,9 +24,9 @@ class BotManager:
             self.current_bot = HeuristicDodgeBot(self.game, algorithm)
         else:
             if algorithm == DodgeAlgorithm.DL_PARAM_INPUT_NUMPY:
-                self.current_bot = ParamNumpyAgent(self.game)
+                self.current_bot = ParamNumpyAgent(self.game, load_saved_model)
             elif algorithm == DodgeAlgorithm.DL_PARAM_INPUT_TORCH:
-                self.current_bot = ParamTorchAgent(self.game)
+                self.current_bot = ParamTorchAgent(self.game, load_saved_model)
         return self.current_bot
     
     def get_action(self, state) -> np.ndarray:

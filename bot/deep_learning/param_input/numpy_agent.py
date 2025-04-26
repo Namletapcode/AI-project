@@ -23,10 +23,11 @@ model_path = 'saved_model/param_numpy_model.npz'
 
 class ParamNumpyAgent(BaseAgent):
 
-    def __init__(self, game: Game):
+    def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.epsilon = EPSILON
-        self.model = Model(28, 256, 9, LEARNING_RATE, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model = Model(28, 256, 9, LEARNING_RATE, model_path, load_saved_model)
+        #warning: the number of neurals in first layer must match the size of game.get_state()
 
     def get_state(self) -> np.ndarray:
         """
@@ -38,7 +39,7 @@ class ParamNumpyAgent(BaseAgent):
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         action = np.zeros((9, ), dtype=np.float64)
-        if self.mode == "training":
+        if self.mode == "train":
             # decise to take a random action or not
             if random.random() < self.epsilon:
                 # if yes pick a random action
@@ -77,8 +78,8 @@ class ParamNumpyAgent(BaseAgent):
             target[np.argmax(action)] = reward
         return target
     
-    def train(self):
-        self.set_mode("training")
+    def train(self, render: bool = False):
+        self.set_mode("train")
 
         scores = []
         mean_scores = []
@@ -92,7 +93,7 @@ class ParamNumpyAgent(BaseAgent):
             action = self.get_action(current_state)
 
             # perform action in game
-            self.perform_action(action)
+            self.perform_action(action, render)
 
             # get the new state after performed action
             next_state = self.get_state()
@@ -132,8 +133,10 @@ class ParamNumpyAgent(BaseAgent):
 
                 self.restart_game()
 
-    def perform(self):
+    def perform(self, render: bool = True):
         self.set_mode("perform")
+        
+        self.load_model()
 
         while True:
             # get the current game state
@@ -143,7 +146,7 @@ class ParamNumpyAgent(BaseAgent):
             action = self.get_action(state)
 
             # perform selected move
-            self.perform_action(action)
+            self.perform_action(action, render)
 
             # check if game over or not
             _, game_over = self.get_reward()
@@ -161,9 +164,9 @@ class ParamNumpyAgent(BaseAgent):
 if __name__ == '__main__':
     agent = ParamNumpyAgent(Game())
 
-    mode = "perform"
+    mode = "train"
 
-    if mode == "training":
+    if mode == "train":
         agent.train()
     elif mode == "perform":
         agent.perform()

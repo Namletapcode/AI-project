@@ -4,26 +4,26 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
-model_file = 'saved_model/pytorch_model.pth'
-
 class Linear_QNet(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_dim=256):
+    def __init__(self, state_dim, action_dim, hidden_dim=256, model_path='saved_model/param_pytorch_model.pth', load_saved_model: bool = True):
         super().__init__()
         
-        self.model_path = None
-        folder_path = os.path.dirname(model_file)
+        self.model_path = model_path
+        
+        folder_path = os.path.dirname(self.model_path)
         os.makedirs(folder_path, exist_ok=True)
         
-        self.linear1 = nn.Linear(state_dim, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, action_dim)
+        if load_saved_model and os.path.exists(self.model_path):
+            self.load()
+        else:
+            # generate random weight and bias with all element between -0.5 and 0.5
+            self.linear1 = nn.Linear(state_dim, hidden_dim)
+            self.linear2 = nn.Linear(hidden_dim, action_dim)
     
     def forward(self, x) -> torch.Tensor:
         x = F.relu(self.linear1(x))
         x = self.linear2(x)
         return x
-
-    def set_model_path(self, model_path):
-        self.model_path = model_path
     
     def save(self) -> None:
         torch.save(self.state_dict(), self.model_path)

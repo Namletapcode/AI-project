@@ -5,5 +5,5 @@ from bot.bot_manager import BotManager
 if __name__ == "__main__":
     game = Game()
     bot_manager = BotManager(game)
-    bot = bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_TORCH)
-    game.run(bot, bot_manager.draw_bot_vision)
+    bot = bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY)
+    game.run(bot, mode="train", render=True, draw_extra=bot_manager.draw_bot_vision)
