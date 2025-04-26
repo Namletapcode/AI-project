@@ -2,6 +2,12 @@ import torch
 import random
 import itertools
 import numpy as np
+
+if __name__ == "__main__":
+    # only re-direct below if running this file
+    import sys, os
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
 from bot.deep_learning.models.pytorch_model import Linear_QNet, QTrainer
@@ -193,4 +199,4 @@ class ParamTorchAgent(BaseAgent):
 if __name__ == '__main__':
     game = Game()
     agent = ParamTorchAgent(game)
-    agent.perform()
+    agent.train()

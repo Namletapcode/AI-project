@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 plt.ion()
 
-def plot_training_progress(scores, title='Training...'):
+def plot_training_progress(scores, mean_scores: list | None = None, title='Training...'):
     """
     Plot training progress in real-time
     
@@ -10,16 +10,28 @@ def plot_training_progress(scores, title='Training...'):
         scores: List of scores to plot
         title: Title of the plot
     """
-    plt.clf()
-    plt.title(title)
-    plt.xlabel('Number of Games')
-    plt.ylabel('Score')
-    plt.plot(scores, label='Score')
-    plt.ylim(ymin=0)
-    if scores:  # Add current score if list not empty
+    if not mean_scores:
+        plt.clf()
+        plt.title(title)
+        plt.xlabel('Number of Games')
+        plt.ylabel('Score')
+        plt.plot(scores, label='Score')
+        plt.ylim(ymin=0)
         plt.text(len(scores) - 1, scores[-1], str(scores[-1]))
-    plt.legend()
-    plt.pause(0.05)
+        plt.legend()
+        plt.pause(0.05)
+    else:
+        plt.clf()
+        plt.title(title)
+        plt.xlabel('Number of Games')
+        plt.ylabel('Score')
+        plt.plot(scores, label='Score')
+        plt.plot(mean_scores, label='Average score')
+        plt.ylim(ymin=0)
+        plt.text(len(scores) - 1, scores[-1], str(scores[-1]))
+        plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
+        plt.legend()
+        plt.pause(0.05)
 
 import win32gui
 import win32ui

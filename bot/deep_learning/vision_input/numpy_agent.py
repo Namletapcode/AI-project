@@ -24,8 +24,7 @@ class Agent(BaseAgent):
     def __init__(self, game: Game):
         super().__init__(game)
         self.epsillon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
-        self.model.set_model_path(model_path)
+        self.model = Model((IMG_SIZE ** 2) * 2, 256, 9, LEARNING_RATE, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
         self.reset_self_img()
 
     def reset_self_img(self):
@@ -57,8 +56,8 @@ class Agent(BaseAgent):
         self.game.restart_game()
         self.reset_self_img()
 
-    def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray):
-        target = self.convert(current_state, action, reward, next_state)
+    def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
+        target = self.convert(current_state, action, reward, next_state, game_over)
         self.model.train(current_state, target)
 
     def train_long_memory(self):
@@ -69,14 +68,18 @@ class Agent(BaseAgent):
             # else pick random 1000 states to re-train
             mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
         for current_state, action, reward, next_state, game_over in mini_sample:
-            self.train_short_memory(current_state, action, reward, next_state)
+            self.train_short_memory(current_state, action, reward, next_state, game_over)
 
-    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray) -> np.ndarray:
+    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool) -> np.ndarray:
         # use simplified Bellman equation to calculate expected output
-        target = self.model.forward(current_state)[2]
-        Q_new = reward + GAMMA * np.max(self.model.forward(next_state)[2])
-        Q_new = np.clip(Q_new, -10000, 10000)
-        target[np.argmax(action)] = Q_new
+        if not game_over:
+            target = self.model.forward(current_state)[2]
+            Q_new = reward + GAMMA * np.max(self.model.target_forward(next_state))
+            Q_new = np.clip(Q_new, -10000, 10000)
+            target[np.argmax(action)] = Q_new
+        else:
+            target = self.model.forward(current_state)[2]
+            target[np.argmax(action)] = reward
         return target
     
     def train(self):
@@ -101,7 +104,7 @@ class Agent(BaseAgent):
             reward, game_over = self.get_reward()
 
             # train short memory with the action performed
-            self.train_short_memory(current_state, action, reward, next_state)
+            self.train_short_memory(current_state, action, reward, next_state, game_over)
 
             # remember the action and the reward
             self.remember(current_state, action, reward, next_state, game_over)

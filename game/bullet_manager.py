@@ -13,9 +13,11 @@ class BulletManager:
         self.reset(0)
 
     def get_random_point(self) -> tuple[int, int]:
-        padding = 40
+        """padding = 40
         corners = [(padding, padding), (SCREEN_WIDTH - padding, padding), (padding, SCREEN_HEIGHT - padding), (SCREEN_WIDTH - padding, SCREEN_HEIGHT - padding),
-                   (padding, SCREEN_HEIGHT / 2), (SCREEN_WIDTH - padding, SCREEN_HEIGHT / 2), (SCREEN_WIDTH / 2, padding), (SCREEN_WIDTH / 2, SCREEN_HEIGHT - padding)]
+                   (padding, SCREEN_HEIGHT / 2), (SCREEN_WIDTH - padding, SCREEN_HEIGHT / 2), (SCREEN_WIDTH / 2, padding), (SCREEN_WIDTH / 2, SCREEN_HEIGHT - padding)]"""
+        padding = 0
+        corners = [(padding, padding), (SCREEN_WIDTH - padding, padding), (padding, SCREEN_HEIGHT - padding), (SCREEN_WIDTH - padding, SCREEN_HEIGHT - padding),]
         return random.choice(corners)
     
     def random_delay(self, event) -> int:

@@ -79,7 +79,7 @@ class Game:
         return state
     
     def get_reward(self) -> tuple[float, bool]:
-        return self.reward if not self.game_over else -10.0, self.game_over
+        return self.reward if not self.game_over else -100.0, self.game_over
 
     def check_events(self):
         for event in pygame.event.get():

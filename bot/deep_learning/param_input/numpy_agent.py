@@ -1,18 +1,22 @@
 import numpy as np
 import random
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
+if __name__ == "__main__":
+    # only re-direct below if running this file
+    import sys, os
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
 from bot.deep_learning.models.numpy_model import Model
 from utils.bot_helper import plot_training_progress
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
 
 MAX_MEMORY = 100000
-MAX_SAMPLE_SIZE = 1000
-LEARNING_RATE = 0.01
-GAMMA = 0.9
+MAX_SAMPLE_SIZE = 10000
+LEARNING_RATE = 0.001
+GAMMA = 1
 EPSILON = 1
-EPSILON_DECAY = 0.95
+EPSILON_DECAY = 0.995
 MIN_EPSILON = 0.01
 
 model_path = 'saved_model/param_numpy_model.npz'
@@ -22,8 +26,7 @@ class ParamNumpyAgent(BaseAgent):
     def __init__(self, game: Game):
         super().__init__(game)
         self.epsilon = EPSILON
-        self.model = Model(28, 256, 9, LEARNING_RATE) #warning: the number of neurals in first layer must match the size of game.get_state()
-        self.model.set_model_path(model_path)
+        self.model = Model(28, 256, 9, LEARNING_RATE, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
 
     def get_state(self) -> np.ndarray:
         """
@@ -48,8 +51,8 @@ class ParamNumpyAgent(BaseAgent):
             action[np.argmax(self.model.forward(state)[2])] = 1
         return action
 
-    def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray):
-        target = self.convert(current_state, action, reward, next_state)
+    def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
+        target = self.convert(current_state, action, reward, next_state, game_over)
         self.model.train(current_state, target)
 
     def train_long_memory(self):
@@ -60,20 +63,26 @@ class ParamNumpyAgent(BaseAgent):
             # else pick random 1000 states to re-train
             mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
         for current_state, action, reward, next_state, game_over in mini_sample:
-            self.train_short_memory(current_state, action, reward, next_state)
+            self.train_short_memory(current_state, action, reward, next_state, game_over)
 
-    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray) -> np.ndarray:
+    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool) -> np.ndarray:
         # use simplified Bellman equation to calculate expected output
-        target = self.model.forward(current_state)[2]
-        Q_new = reward + GAMMA * np.max(self.model.forward(next_state)[2])
-        Q_new = np.clip(Q_new, -10000, 10000)
-        target[np.argmax(action)] = Q_new
+        if not game_over:
+            target = self.model.forward(current_state)[2]
+            Q_new = reward + GAMMA * np.max(self.model.target_forward(next_state))
+            Q_new = np.clip(Q_new, -10000, 10000)
+            target[np.argmax(action)] = Q_new
+        else:
+            target = self.model.forward(current_state)[2]
+            target[np.argmax(action)] = reward
         return target
     
     def train(self):
         self.set_mode("training")
 
         scores = []
+        mean_scores = []
+        sum = 0
 
         while True:
             # get the current game state
@@ -92,7 +101,7 @@ class ParamNumpyAgent(BaseAgent):
             reward, game_over = self.get_reward()
 
             # train short memory with the action performed
-            self.train_short_memory(current_state, action, reward, next_state)
+            self.train_short_memory(current_state, action, reward, next_state, game_over)
 
             # remember the action and the reward
             self.remember(current_state, action, reward, next_state, game_over)
@@ -108,12 +117,18 @@ class ParamNumpyAgent(BaseAgent):
                 self.train_long_memory()
 
                 if self.number_of_games % 10 == 0:
+                    if self.number_of_games % 250 == 0:
+                        self.model.update_target_net()
+
                     # save before start new game
                     self.model.save()
 
                 # save the score to plot
-                scores.append(self.get_score())
-                plot_training_progress(scores)
+                score = self.get_score()
+                sum += score
+                mean_scores.append(sum / self.number_of_games)
+                scores.append(score)
+                plot_training_progress(scores, mean_scores)
 
                 self.restart_game()
 
@@ -146,7 +161,7 @@ class ParamNumpyAgent(BaseAgent):
 if __name__ == '__main__':
     agent = ParamNumpyAgent(Game())
 
-    mode = "training"
+    mode = "perform"
 
     if mode == "training":
         agent.train()
