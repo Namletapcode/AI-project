@@ -52,10 +52,7 @@ class BaseAgent:
         """
         Perform the given action in the game.
         """
-        self.game.update(action)
-        if render:
-            self.game.draw()
-        
+        self.game.take_action(action, render)
     
     def get_reward(self) -> tuple[float, bool]:
         """

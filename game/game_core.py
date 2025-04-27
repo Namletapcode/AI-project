@@ -50,9 +50,10 @@ class Game:
                     self.draw(draw_extra)
         else:
             bot.train(render)
-    def take_action(self, action: np.ndarray): # for AI agent
+    def take_action(self, action: np.ndarray, render: bool = True): # for AI agent
         self.update(action)
-        self.draw()
+        if render:
+            self.draw()
 
     def get_state(self, is_heuristic: bool = False):
         """

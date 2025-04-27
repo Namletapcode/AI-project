@@ -1,11 +1,12 @@
-import numpy as np
-import random
-# import sys, os
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+if __name__ == "__main__":
+    import sys, os
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from bot.deep_learning.models.numpy_model import Model
 from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale
 from bot.deep_learning.base_agent import BaseAgent
 from game.game_core import Game
+import numpy as np
+import random
 
 MAX_MEMORY = 10000
 MAX_SAMPLE_SIZE = 1000
@@ -15,7 +16,7 @@ EPSILON = 1
 EPSILON_DECAY = 0.999
 MIN_EPSILON = 0.01
 
-IMG_SIZE = 60 # 60 x 60 pixels^2
+IMG_SIZE = 40 # 60 x 60 pixels^2
 
 model_path = 'saved_model/vision_numpy_model.npz'
 
@@ -82,7 +83,7 @@ class Agent(BaseAgent):
             target[np.argmax(action)] = reward
         return target
     
-    def train(self, render: bool = False):
+    def train(self, render: bool = True):
         self.set_mode("train")
 
         scores = []
