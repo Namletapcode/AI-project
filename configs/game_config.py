@@ -24,6 +24,13 @@ class DrawSectorMethod(Enum):
     USE_TRIANGLE_AND_ARC = 2
     USE_PIL = 3
 
+class DynamicConfig:
+    DEFAULT_BULLET_SPEED = 150
+    GAME_SPEED = 5.0
+    DISPLAY_PLAYER_TRAIL = True
+    DISPLAY_BULLET_TRAIL = False
+    USE_BULLET_COLORS = False
+
 DRAW_SECTOR_METHOD = DrawSectorMethod.USE_POLYGON
 
 # Cấu hình vệt mờ

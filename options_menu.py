@@ -6,12 +6,12 @@ class Options_Menu:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.font=pygame.font.Font(None, 36)
         self.options = [
-            "Control Mode: Player",
+            "Control Mode: AI",
             "Bullet Speed: 5",
             "Back"
             ]
         self.selected_index = 0
-        self.control_mode = "Player"
+        self.control_mode = "AI"
         self.bullet_speed = 5
     
     def draw(self):
@@ -40,7 +40,7 @@ class Options_Menu:
               self.selected_index = (self.selected_index + 1) % len(self.options)
            elif event.key == pygame.K_RETURN:
               if self.selected_index == 0:  # Toggle control mode
-                 self.control_mode = "AI" if self.control_mode == "Player" else "Player"
+                 self.control_mode = "Player" if self.control_mode == "AI" else "AI"
               elif self.selected_index == 1:  # Change bullet speed
                  self.bullet_speed += 1
                  if self.bullet_speed > 10:

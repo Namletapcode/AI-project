@@ -6,6 +6,8 @@ from menu import Menu
 from options_menu import Options_Menu
 import pygame
 from bot.bot_manager import BotManager
+import threading
+from configs.dynamic_config import launch_configs_window
 
 if __name__ == "__main__":
     pygame.init()
@@ -17,7 +19,7 @@ if __name__ == "__main__":
     options_menu = Options_Menu(screen, font)
     in_menu = True
     in_options = False
-    control_mode = "Player"  # Mặc định
+    control_mode = "AI"  # Mặc định
     bullet_speed = 5  # Mặc định
 
     # Vòng lặp menu
@@ -54,7 +56,9 @@ if __name__ == "__main__":
             options_menu.draw()
         else:
             menu.draw()
-
+    
+    gui_thread = threading.Thread(target = launch_configs_window, daemon = True) #Khởi tạo GUI
+    gui_thread.start()
     game = Game()
     bot_manager = BotManager(game)
     bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED)

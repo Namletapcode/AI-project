@@ -4,13 +4,14 @@ import math
 import numpy as np
 from configs.game_config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, UPS,
-    dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
+    dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, BASE_UPS
 )
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS
 from game.bullet_manager import BulletManager
 from game.player import Player
 from menu import Menu
 from options_menu import Options_Menu
+from configs.game_config import DynamicConfig
 
 class Game:
     def __init__(self):

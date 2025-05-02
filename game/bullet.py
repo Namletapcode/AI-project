@@ -4,6 +4,7 @@ from collections import deque
 from configs.game_config import (SCREEN_WIDTH, SCREEN_HEIGHT, USE_BULLET_COLORS,
                       DISPLAY_BULLET_TRAIL, TRAIL_MAX_LENGTH, UPDATE_DELTA_TIME)
 from utils.draw_utils import draw_water_drop
+from configs.game_config import DynamicConfig
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, angle: int, speed: int, radius: int, color, fade=0, bouncing=False, from_corner=False, max_bounces=5):
@@ -13,7 +14,7 @@ class Bullet(pygame.sprite.Sprite):
         self.angle = angle
         self.speed = speed
         self.fade = fade
-        self.origin_color = color if USE_BULLET_COLORS else (255, 255, 255)
+        self.origin_color = color if DynamicConfig.USE_BULLET_COLORS else (255, 255, 255)
         self.color = self.origin_color
         self.bouncing = bouncing
         self.from_corner = from_corner
@@ -24,6 +25,7 @@ class Bullet(pygame.sprite.Sprite):
         self.bounce_count = 0
         self.max_bounces = max_bounces
         self.was_bouncing = False 
+        
 
         
 
@@ -65,10 +67,11 @@ class Bullet(pygame.sprite.Sprite):
             self.kill()
 
     def draw(self, surface):
-        if DISPLAY_BULLET_TRAIL:
+        if DynamicConfig.DISPLAY_BULLET_TRAIL and self.trail is not None:
             self.trail.append((self.x, self.y))
             draw_water_drop(surface, self)
         pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
+
         
     def is_out_of_bounds(self):
         return not (0 <= self.x <= SCREEN_WIDTH and 0 <= self.y <= SCREEN_HEIGHT)

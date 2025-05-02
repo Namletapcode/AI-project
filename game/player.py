@@ -7,7 +7,8 @@ from configs.game_config import (
     PLAYER_SPEED, DISPLAY_PLAYER_TRAIL, TRAIL_MAX_LENGTH, UPDATE_DELTA_TIME)
 from configs.bot_config import WALL_CLOSE_RANGE
 from utils.draw_utils import draw_water_drop
-    
+from configs.game_config import DynamicConfig
+
 class Player(pygame.sprite.Sprite):
     
     # optimize
@@ -38,8 +39,8 @@ class Player(pygame.sprite.Sprite):
         self.trail = deque(maxlen=TRAIL_MAX_LENGTH)  if DISPLAY_PLAYER_TRAIL else None
         
     def draw(self):
-        if DISPLAY_PLAYER_TRAIL:
-            self.trail.append((self.x, self.y))  # Lưu vị trí mới vào trail
+        if DynamicConfig.DISPLAY_PLAYER_TRAIL and self.trail is not None:
+            self.trail.append((self.x, self.y))
             draw_water_drop(self.surface, self)
         pygame.draw.circle(self.surface, self.color, (self.x,self.y), self.radius)
 
