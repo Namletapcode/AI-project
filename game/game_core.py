@@ -9,6 +9,8 @@ from configs.game_config import (
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS
 from game.bullet_manager import BulletManager
 from game.player import Player
+from menu import Menu
+from options_menu import Options_Menu
 
 class Game:
     def __init__(self):
@@ -16,13 +18,15 @@ class Game:
         self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Touhou")
         self.clock = pygame.time.Clock() 
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.screen_rect = self.surface.get_rect()
         self.update_counter = 0
         self.player = Player(self.surface)
         self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
-        self.update_counter = 0
+        self.menu=Menu(self.screen)
+        self.options_menu= Options_Menu(self.screen,self.font)
     
     def run(self, bot, mode: str = "perform", render: bool = True, draw_extra: callable = None):
         update_timer = 0
