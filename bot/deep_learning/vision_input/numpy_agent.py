@@ -2,7 +2,7 @@ if __name__ == "__main__":
     import sys, os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from bot.deep_learning.models.numpy_model import Model
-from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale
+from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale, show_numpy_to_image
 from bot.deep_learning.base_agent import BaseAgent
 from game.game_core import Game
 import numpy as np
@@ -25,7 +25,7 @@ class Agent(BaseAgent):
     def __init__(self, game: Game):
         super().__init__(game)
         self.epsillon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 256, 9, LEARNING_RATE, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
         self.reset_self_img()
 
     def reset_self_img(self):
@@ -93,6 +93,9 @@ class Agent(BaseAgent):
         while True:
             # get the current game state
             current_state = self.get_state()
+
+            # optional (on or off by comment or not the next line): show what the AI see in real-time
+            show_numpy_to_image(self.img_02, IMG_SIZE)
 
             # get the move based on the state
             action = self.get_action(current_state)

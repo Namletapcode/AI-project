@@ -51,9 +51,8 @@ import win32gui
 import win32ui
 import win32con
 import numpy as np
-import cv2
 
-def get_screen_shot_gray_scale(x: float, y: float, img_size: int, show_vision: bool = True) -> np.ndarray:
+def get_screen_shot_gray_scale(x: float, y: float, img_size: int) -> np.ndarray:
     """
     Params:
         x: horizontal position of player
@@ -100,12 +99,14 @@ def get_screen_shot_gray_scale(x: float, y: float, img_size: int, show_vision: b
     result = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
     result = result.reshape((-1, 1))  # shape: (img_size * img_size, 1)
 
-    # Show what the AI see in real-time
-    if show_vision:
-        vision = (result * 255).astype(np.uint8).reshape((img_size, img_size))
-        cv2.imshow('AI Vision', vision)
-
     return result
+
+import cv2
+
+def show_numpy_to_image(img: np.ndarray, img_size: int):
+    # Show what the AI see
+    vision = (img * 255).astype(np.uint8).reshape((img_size, img_size))
+    cv2.imshow('AI Vision', vision)
 
 # For testing visualization
 if __name__ == '__main__':
