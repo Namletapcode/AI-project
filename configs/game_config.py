@@ -34,7 +34,7 @@ class DynamicConfig:
 DRAW_SECTOR_METHOD = DrawSectorMethod.USE_POLYGON
 
 # Cấu hình vệt mờ
-DISPLAY_PLAYER_TRAIL = True
+DISPLAY_PLAYER_TRAIL = False
 DISPLAY_BULLET_TRAIL = False
 TRAIL_MAX_LENGTH = 10  # Giới hạn số điểm lưu trong vệt mờ
 

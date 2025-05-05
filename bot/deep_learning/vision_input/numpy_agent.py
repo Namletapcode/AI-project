@@ -16,7 +16,7 @@ EPSILON = 1
 EPSILON_DECAY = 0.999
 MIN_EPSILON = 0.01
 
-IMG_SIZE = 40 # 60 x 60 pixels^2
+IMG_SIZE = 50 # 50 x 50 pixel^2
 
 model_path = 'saved_model/vision_numpy_model.npz'
 
@@ -87,6 +87,8 @@ class Agent(BaseAgent):
         self.set_mode("train")
 
         scores = []
+        mean_scores = []
+        sum = 0
 
         while True:
             # get the current game state
@@ -121,13 +123,18 @@ class Agent(BaseAgent):
                 self.train_long_memory()
 
                 if self.number_of_games % 10 == 0:
+                    if self.number_of_games % 250 == 0:
+                        self.model.update_target_net()
+
                     # save before start new game
-                    # agent.model.save()
-                    pass
+                    agent.model.save()
 
                 # save the score to plot
-                scores.append(self.get_score())
-                plot_training_progress(scores)
+                score = self.get_score()
+                sum += score
+                mean_scores.append(sum / self.number_of_games)
+                scores.append(score)
+                plot_training_progress(scores, mean_scores)
 
                 self.restart_game()
 
@@ -159,7 +166,7 @@ class Agent(BaseAgent):
 
 if __name__ == '__main__':
     agent = Agent(Game())
-    mode = "perform"
+    mode = "train"
 
     if mode == "train":
         agent.train()
