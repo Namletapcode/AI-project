@@ -34,15 +34,17 @@ def one_hot_to_vector(action):
     return pygame.Vector2(0, 0)
 
 def process_bullets(bullets):
-    """Chuyển đổi danh sách đạn sang định dạng thống nhất (pygame.Vector2)"""
+    """Chuyển đổi danh sách đạn sang định dạng thống nhất (dict với x,y)"""
     processed = []
     for bullet in bullets:
-        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):  # Nếu là object có thuộc tính x,y
-            processed.append(pygame.Vector2(bullet.x, bullet.y))
-        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) >= 2:  # Nếu là mảng
-            processed.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-        elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:  # Nếu là dict
-            processed.append(pygame.Vector2(float(bullet['x']), float(bullet['y'])))
+        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+            processed.append({'x': float(bullet.x), 'y': float(bullet.y)})
+        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) >= 2:
+            processed.append({'x': float(bullet[0]), 'y': float(bullet[1])})
+        elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:
+            processed.append({'x': float(bullet['x']), 'y': float(bullet['y'])})
+        else:
+            continue  # Bỏ qua nếu không xác định được định dạng
     return processed
 
 class HeadlessBenchmark:
@@ -53,7 +55,7 @@ class HeadlessBenchmark:
         
     def _run_single_test(self, name, algorithm, run_idx):
         try:
-            game = Game()
+            game = Game(headless=True)  # Thêm chế độ headless
             bot_manager = BotManager(game)
 
             bot = bot_manager.create_bot(algorithm)
@@ -74,7 +76,9 @@ class HeadlessBenchmark:
                         'bullets': processed_bullets,
                         'player': {
                             'x': float(game.player.x),
-                            'y': float(game.player.y)
+                            'y': float(game.player.y),
+                            'velocity_x': 0,  # Thêm các thông tin bổ sung nếu cần
+                            'velocity_y': 0
                         }
                     }
                     action = bot.get_action(state)
@@ -126,10 +130,12 @@ def setup_environment():
 def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     os.makedirs(base_path, exist_ok=True)
     if df.empty:
+        print("No results to save!")
         return None, None
 
     csv_path = f"{base_path}/benchmark_results.csv"
     df.to_csv(csv_path, index=False)
+    print(f"Results saved to {csv_path}")
 
     plt.figure(figsize=(14, 8))
     for algo in df['algorithm'].unique():
@@ -145,10 +151,12 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     plot_path = f"{base_path}/performance_comparison.png"
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close()
+    print(f"Plot saved to {plot_path}")
     
     return csv_path, plot_path
 
 if __name__ == "__main__":
+    print("Setting up environment...")
     setup_environment()
 
     algorithms = {
@@ -162,8 +170,12 @@ if __name__ == "__main__":
         "DL Vision Input Numpy": DodgeAlgorithm.DL_VISION_INPUT_NUMPY,
     }
 
+    print("Starting benchmark...")
     benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
     results_df = benchmark.run(algorithms)
 
+    print("Saving results...")
     csv_file, plot_file = save_results(results_df)
+    
+    print("Benchmark completed!")
     pygame.quit()
