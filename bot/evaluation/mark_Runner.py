@@ -61,8 +61,8 @@ class HeadlessBenchmark:
             is_heuristic = getattr(bot, "is_heuristic", False)
 
             while True:
-                 state = game.get_state()
-                 if is_heuristic:
+                state = game.get_state()
+                if is_heuristic:
         
                     if isinstance(state, dict):
                         state = SimpleNamespace(**state)
