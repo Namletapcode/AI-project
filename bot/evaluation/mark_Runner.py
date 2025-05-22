@@ -58,7 +58,7 @@ class HeadlessBenchmark:
             bot = bot_creators.get(algorithm, lambda: None)()
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
-            is_heuristic = hasattr(bot, "is_heuristic", False) and bot.is_heuristic
+            is_heuristic = getattr(bot, "is_heuristic", False) 
             
             start_time = time.time()
             while True:
