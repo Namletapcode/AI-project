@@ -83,7 +83,7 @@ class HeadlessBenchmark:
                     if isinstance(action, (list, np.ndarray)) and len(action) == 9:
                         action = one_hot_to_vector(action)
 
-                print(f"Run loop - Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
+                print(f"[{name} | Run {run_idx + 1}] Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
                 game.update(action)
 
                 if game.game_over:
