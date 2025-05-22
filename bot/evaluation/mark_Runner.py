@@ -16,6 +16,23 @@ from game.game_core import Game
 from bot.bot_manager import BotManager
 from configs.bot_config import DodgeAlgorithm
 
+def one_hot_to_vector(action):
+    mapping = {
+        0: pygame.Vector2(-1, -1),
+        1: pygame.Vector2(0, -1),
+        2: pygame.Vector2(1, -1),
+        3: pygame.Vector2(-1, 0),
+        4: pygame.Vector2(0, 0),
+        5: pygame.Vector2(1, 0),
+        6: pygame.Vector2(-1, 1),
+        7: pygame.Vector2(0, 1),
+        8: pygame.Vector2(1, 1),
+    }
+    if isinstance(action, (list, np.ndarray)):
+        index = int(np.argmax(action))
+        return mapping.get(index, pygame.Vector2(0, 0))
+    return pygame.Vector2(0, 0)
+
 class HeadlessBenchmark:
     def __init__(self, num_runs=1, num_threads=4):
         self.num_runs = num_runs
@@ -36,7 +53,6 @@ class HeadlessBenchmark:
                 DodgeAlgorithm.DL_PARAM_INPUT_NUMPY: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY),
                 DodgeAlgorithm.DL_PARAM_INPUT_TORCH: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_TORCH),
                 DodgeAlgorithm.DL_VISION_INPUT_NUMPY: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_VISION_INPUT_NUMPY)
-       
             }
 
             bot = bot_creators.get(algorithm, lambda: None)()
@@ -59,24 +75,27 @@ class HeadlessBenchmark:
                         if isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
                             processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
                         elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-                             processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
+                            processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
 
                     action = bot.get_action(processed_bullets)
                 else:
                     action = bot.get_action(state)
+                    if isinstance(action, (list, np.ndarray)) and len(action) == 9:
+                        action = one_hot_to_vector(action)
+
                 print(f"Run loop - Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
-
                 game.update(action)
-                if game.game_over:
-                    break            
 
+                if game.game_over:
+                    break
 
             return {
                 "algorithm": name,
                 "run": run_idx + 1,
                 "score": game.score,
             }
-        except Exception:
+        except Exception as e:
+            print(f"[ERROR] Run failed: {e}")
             return None
 
     def run(self, algorithms):
@@ -103,7 +122,7 @@ def setup_environment():
 def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     os.makedirs(base_path, exist_ok=True)
     if df.empty:
-        return None, None
+        return None, None, None
 
     csv_path = f"{base_path}/benchmark_results.csv"
     df.to_csv(csv_path, index=False)
@@ -112,51 +131,39 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     plots_dir = os.path.join(base_path, "individual_plots")
     os.makedirs(plots_dir, exist_ok=True)
 
-    # Get unique algorithms
     algorithms = df['algorithm'].unique()
-    
-    # Create individual plots for each algorithm 
     plot_paths = []
     for algo in algorithms:
         algo_df = df[df['algorithm'] == algo].copy()
-        
         plt.figure(figsize=(10, 6))
         plt.plot(algo_df['run'], algo_df['score'], marker='o', color='blue')
-        
         plt.title(f"Performance of {algo} (Raw Scores)", fontsize=16)
         plt.xlabel("Run Number", fontsize=14)
         plt.ylabel("Score", fontsize=14)
         plt.grid(True)
-        
-       
-        
-        # Save individual plot
         plot_path = os.path.join(plots_dir, f"{algo.replace(' ', '_')}_plot.png")
         plt.savefig(plot_path, bbox_inches='tight')
         plt.close()
         plot_paths.append(plot_path)
 
-    # Create a combined plot with cumulative averages
     plt.figure(figsize=(14, 8))
     plt.subplots_adjust(right=0.75)
-    
     for algo in algorithms:
         algo_df = df[df['algorithm'] == algo].copy()
         algo_df['cumulative_avg'] = algo_df['score'].expanding().mean()
         plt.plot(algo_df['run'], algo_df['cumulative_avg'], label=algo)
-    
     plt.title("Algorithm Comparison (Cumulative Averages)", fontsize=16)
     plt.xlabel("Number of Runs", fontsize=14)
     plt.ylabel("Cumulative Average Score", fontsize=14)
     plt.grid(True)
     plt.legend(title="Algorithms", fontsize=12, 
                bbox_to_anchor=(1.05, 1), loc='upper left')
-    
     combined_plot_path = f"{base_path}/combined_plot.png"
     plt.savefig(combined_plot_path, bbox_inches='tight')
     plt.close()
     
     return csv_path, plot_paths, combined_plot_path
+
 if __name__ == "__main__":
     setup_environment()
 
@@ -175,7 +182,4 @@ if __name__ == "__main__":
     results_df = benchmark.run(algorithms)
 
     csv_file, individual_plots, combined_plot = save_results(results_df)
-
-    
-
     pygame.quit()
