@@ -8,7 +8,7 @@ import pygame
 import numpy as np
 from types import SimpleNamespace
 
-project_root = '/content/AI-project'
+project_root = '/content/e-project'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
     
@@ -22,11 +22,11 @@ class HeadlessBenchmark:
         self.num_threads = num_threads
         self.results = []
         
-    def _run_single_test(self, name, algorithm, run_idx):
+    def _run_single_test(self, algorithm, run_idx):
         try:
-            game = Game()
+            game = Game(headless=True)
             bot_manager = BotManager(game)
-
+            
             bot_creators = {
                 DodgeAlgorithm.FURTHEST_SAFE_DIRECTION: lambda: bot_manager.create_bot(DodgeAlgorithm.FURTHEST_SAFE_DIRECTION),
                 DodgeAlgorithm.LEAST_DANGER_PATH: lambda: bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH),
@@ -70,21 +70,21 @@ class HeadlessBenchmark:
                     break
 
             return {
-                "algorithm": name,
+                "algorithm": algorithm.name,
                 "run": run_idx + 1,
                 "score": game.score,
                 "duration": time.time() - start_time
             }
-        except Exception:
+        except Exception as e:
             return None
 
     def run(self, algorithms):
         with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
             futures = []
-            for name, algo in algorithms.items():
+            for algo in algorithms:
                 for i in range(self.num_runs):
                     futures.append(executor.submit(
-                        self._run_single_test, name, algo, i
+                        self._run_single_test, algo, i
                     ))
 
             for future in futures:
@@ -158,8 +158,9 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     return csv_path, plot_paths, combined_plot_path
 if __name__ == "__main__":
     setup_environment()
-
-    algorithms = {
+    
+    # Danh sách các thuật toán cần benchmark
+    algorithms = [
         "Furthest Safe": DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
         "Least Danger": DodgeAlgorithm.LEAST_DANGER_PATH,
         "Least Danger Advanced": DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
@@ -167,13 +168,11 @@ if __name__ == "__main__":
         "Random Safe Zone": DodgeAlgorithm.RANDOM_SAFE_ZONE,
         "DL Numpy": DodgeAlgorithm.DL_PARAM_INPUT_NUMPY,
         "DL Param Torch": DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
-    }
-
-    benchmark = HeadlessBenchmark(num_runs=50, num_threads=4)
-    results_df = benchmark.run(algorithms)
-
-    csv_file, individual_plots, combined_plot = save_results(results_df)
-
+    ]
     
-
+    benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
+    results_df = benchmark.run(algorithms)
+    
+    csv_file, plot_file = save_results(results_df)
+    
     pygame.quit()
