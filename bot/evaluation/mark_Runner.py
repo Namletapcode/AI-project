@@ -114,7 +114,7 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     # Get unique algorithms
     algorithms = df['algorithm'].unique()
     
-    # Create individual plots for each algorithm (show raw scores)
+    # Create individual plots for each algorithm
     plot_paths = []
     for algo in algorithms:
         algo_df = df[df['algorithm'] == algo].copy()
@@ -126,8 +126,6 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
         plt.xlabel("Run Number", fontsize=14)
         plt.ylabel("Score", fontsize=14)
         plt.grid(True)
-        
-       
         
         # Save individual plot
         plot_path = os.path.join(plots_dir, f"{algo.replace(' ', '_')}_plot.png")
@@ -174,14 +172,6 @@ if __name__ == "__main__":
 
     csv_file, individual_plots, combined_plot = save_results(results_df)
 
-    if csv_file and individual_plots:
-        print("\nBenchmark completed!")
-        print(f"→ CSV results: {csv_file}")
-        print("→ Individual plots:")
-        for plot in individual_plots:
-            print(f"   - {plot}")
-        print(f"→ Combined plot: {combined_plot}")
-        print("\nScore statistics:")
-        print(results_df.groupby('algorithm')['score'].describe())
+   
 
     pygame.quit()
