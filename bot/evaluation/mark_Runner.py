@@ -17,7 +17,7 @@ from bot.bot_manager import BotManager
 from configs.bot_config import DodgeAlgorithm
 
 class HeadlessBenchmark:
-    def __init__(self, num_runs=5, num_threads=4):
+    def __init__(self, num_runs=1, num_threads=4):
         self.num_runs = num_runs
         self.num_threads = num_threads
         self.results = []
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         "DL Vision Input Numpy": DodgeAlgorithm.DL_VISION_INPUT_NUMPY,
     }
 
-    benchmark = HeadlessBenchmark(num_runs=50, num_threads=4)
+    benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
     results_df = benchmark.run(algorithms)
 
     csv_file, individual_plots, combined_plot = save_results(results_df)
