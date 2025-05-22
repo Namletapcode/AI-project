@@ -58,9 +58,8 @@ class HeadlessBenchmark:
             bot = bot_creators.get(algorithm, lambda: None)()
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
-            is_heuristic = getattr(bot, "is_heuristic", False) 
-            
-            start_time = time.time()
+            is_heuristic = getattr(bot, "is_heuristic", False)
+
             while True:
                 state = game.get_state()
 
@@ -70,21 +69,25 @@ class HeadlessBenchmark:
                         bullets = state.bullets
                     elif isinstance(state, dict) and 'bullets' in state:
                         bullets = state['bullets']
+
                     processed_bullets = []
                     for bullet in bullets:
                         if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
                             processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
-
                         elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
                             processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-                        
-                    action = bot.get_action(processed_bullets)
+
+                    
+                    if isinstance(state, dict):
+                        state = SimpleNamespace(**state)
+                    setattr(state, 'bullets', processed_bullets)
+
+                    action = bot.get_action(state)
                 else:
                     action = bot.get_action(state)
                     if isinstance(action, (list, np.ndarray)) and len(action) == 9:
                         action = one_hot_to_vector(action)
 
-                #print(f"[{name} | Run {run_idx + 1}] Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
                 game.update(action)
 
                 if game.game_over:
