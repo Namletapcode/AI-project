@@ -33,18 +33,23 @@ def one_hot_to_vector(action):
         return mapping.get(index, pygame.Vector2(0, 0))
     return pygame.Vector2(0, 0)
 
+def process_bullet(bullet):
+    """Xử lý một viên đạn thành dictionary thống nhất"""
+    if isinstance(bullet, np.ndarray):
+        if bullet.size >= 2:
+            return {'x': float(bullet[0]), 'y': float(bullet[1])}
+    elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+        return {'x': float(bullet.x), 'y': float(bullet.y)}
+    elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:
+        return {'x': float(bullet['x']), 'y': float(bullet['y'])}
+    return None
+
 def process_bullets(bullets):
-    """Chuyển đổi danh sách đạn sang định dạng thống nhất (dict với x,y)"""
+    """Xử lý toàn bộ danh sách đạn"""
     processed = []
     for bullet in bullets:
-        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-            processed.append({'x': float(bullet.x), 'y': float(bullet.y)})
-        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) >= 2:
-            processed.append({'x': float(bullet[0]), 'y': float(bullet[1])})
-        elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:
-            processed.append({'x': float(bullet['x']), 'y': float(bullet['y'])})
-        else:
-            continue  # Bỏ qua nếu không xác định được định dạng
+        if processed_bullet := process_bullet(bullet):
+            processed.append(processed_bullet)
     return processed
 
 class HeadlessBenchmark:
@@ -55,7 +60,6 @@ class HeadlessBenchmark:
         
     def _run_single_test(self, name, algorithm, run_idx):
         try:
-            # Đã bỏ tham số headless=True vì class Game không hỗ trợ
             game = Game()
             bot_manager = BotManager(game)
 
@@ -68,20 +72,19 @@ class HeadlessBenchmark:
             
             while True:
                 if is_heuristic:
-                    # Lấy đạn và xử lý thành định dạng thống nhất
                     bullets = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
                     processed_bullets = process_bullets(bullets)
                     
-                    # Tạo state phù hợp cho heuristic bot
-                    state = {
-                        'bullets': processed_bullets,
-                        'player': {
-                            'x': float(game.player.x),
-                            'y': float(game.player.y),
-                            'velocity_x': 0,  # Thêm các thông tin bổ sung nếu cần
-                            'velocity_y': 0
-                        }
-                    }
+                    # Tạo state với định dạng phù hợp
+                    state = SimpleNamespace(
+                        bullets=[SimpleNamespace(**b) for b in processed_bullets],
+                        player=SimpleNamespace(
+                            x=float(game.player.x),
+                            y=float(game.player.y),
+                            velocity_x=0,
+                            velocity_y=0
+                        )
+                    )
                     action = bot.get_action(state)
                 else:
                     state = game.get_state()
