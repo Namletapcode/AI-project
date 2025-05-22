@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pygame
 import numpy as np
 from types import SimpleNamespace
+import traceback  # Thêm để in lỗi chi tiết
 
 project_root = '/content/AI-project'
 if project_root not in sys.path:
@@ -76,6 +77,8 @@ class HeadlessBenchmark:
                 "duration": time.time() - start_time
             }
         except Exception as e:
+            print(f"[ERROR] Algorithm: {algorithm}, Run: {run_idx + 1}")
+            traceback.print_exc()
             return None
 
     def run(self, algorithms):
@@ -102,64 +105,53 @@ def setup_environment():
 def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     os.makedirs(base_path, exist_ok=True)
     if df.empty:
+        print("⚠️ No benchmark results to save.")
         return None, None
 
     csv_path = f"{base_path}/benchmark_results.csv"
     df.to_csv(csv_path, index=False)
 
-    # Create a directory for individual plots
     plots_dir = os.path.join(base_path, "individual_plots")
     os.makedirs(plots_dir, exist_ok=True)
 
-    # Get unique algorithms
     algorithms = df['algorithm'].unique()
-    
-    # Create individual plots for each algorithm 
     plot_paths = []
+
     for algo in algorithms:
         algo_df = df[df['algorithm'] == algo].copy()
-        
         plt.figure(figsize=(10, 6))
         plt.plot(algo_df['run'], algo_df['score'], marker='o', color='blue')
-        
         plt.title(f"Performance of {algo} (Raw Scores)", fontsize=16)
         plt.xlabel("Run Number", fontsize=14)
         plt.ylabel("Score", fontsize=14)
         plt.grid(True)
-        
-       
-        
-        # Save individual plot
         plot_path = os.path.join(plots_dir, f"{algo.replace(' ', '_')}_plot.png")
         plt.savefig(plot_path, bbox_inches='tight')
         plt.close()
         plot_paths.append(plot_path)
 
-    # Create a combined plot with cumulative averages
     plt.figure(figsize=(14, 8))
     plt.subplots_adjust(right=0.75)
-    
     for algo in algorithms:
         algo_df = df[df['algorithm'] == algo].copy()
         algo_df['cumulative_avg'] = algo_df['score'].expanding().mean()
         plt.plot(algo_df['run'], algo_df['cumulative_avg'], label=algo)
-    
+
     plt.title("Algorithm Comparison (Cumulative Averages)", fontsize=16)
     plt.xlabel("Number of Runs", fontsize=14)
     plt.ylabel("Cumulative Average Score", fontsize=14)
     plt.grid(True)
-    plt.legend(title="Algorithms", fontsize=12, 
-               bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.legend(title="Algorithms", fontsize=12, bbox_to_anchor=(1.05, 1), loc='upper left')
     
     combined_plot_path = f"{base_path}/combined_plot.png"
     plt.savefig(combined_plot_path, bbox_inches='tight')
     plt.close()
-    
+
     return csv_path, plot_paths, combined_plot_path
+
 if __name__ == "__main__":
     setup_environment()
     
-    # Danh sách các thuật toán cần benchmark
     algorithms = {
         "Furthest Safe": DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
         "Least Danger": DodgeAlgorithm.LEAST_DANGER_PATH,
@@ -172,8 +164,13 @@ if __name__ == "__main__":
     
     benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
     results_df = benchmark.run(list(algorithms.values()))
-
     
-    csv_file, plot_file = save_results(results_df)
+    print(f"✅ Benchmark completed. Total results: {len(results_df)}")
+
+    if not results_df.empty:
+        print("📊 Preview of results:")
+        print(results_df.head())
+
+    csv_file, plot_files, combined_plot = save_results(results_df)
     
     pygame.quit()
