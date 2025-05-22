@@ -58,7 +58,7 @@ class HeadlessBenchmark:
             bot = bot_creators.get(algorithm, lambda: None)()
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
-            is_heuristic = getattr(bot, "is_heuristic", False)
+            is_heuristic = hasattr(bot, "is_heuristic", False) and bot.is_heuristic
             
             start_time = time.time()
             while True:
@@ -83,7 +83,7 @@ class HeadlessBenchmark:
                     if isinstance(action, (list, np.ndarray)) and len(action) == 9:
                         action = one_hot_to_vector(action)
 
-                print(f"[{name} | Run {run_idx + 1}] Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
+                #print(f"[{name} | Run {run_idx + 1}] Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
                 game.update(action)
 
                 if game.game_over:
