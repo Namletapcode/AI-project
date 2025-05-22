@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor
 import pygame
 import numpy as np
-from types import SimpleNamespace
-import traceback  # Thêm để in lỗi chi tiết
+import traceback
+from configs.bot_config import SCAN_RADIUS
 
 project_root = '/content/AI-project'
 if project_root not in sys.path:
@@ -25,48 +25,26 @@ class HeadlessBenchmark:
         
     def _run_single_test(self, algorithm, run_idx):
         try:
-            game = Game(headless=True)
+          
+            game = Game()  
             bot_manager = BotManager(game)
             
-            bot_creators = {
-                DodgeAlgorithm.FURTHEST_SAFE_DIRECTION: lambda: bot_manager.create_bot(DodgeAlgorithm.FURTHEST_SAFE_DIRECTION),
-                DodgeAlgorithm.LEAST_DANGER_PATH: lambda: bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH),
-                DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED: lambda: bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED),
-                DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION: lambda: bot_manager.create_bot(DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION),
-                DodgeAlgorithm.RANDOM_SAFE_ZONE: lambda: bot_manager.create_bot(DodgeAlgorithm.RANDOM_SAFE_ZONE),
-                DodgeAlgorithm.DL_PARAM_INPUT_NUMPY: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY),
-                DodgeAlgorithm.DL_PARAM_INPUT_TORCH: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_TORCH)
-            }
-
-            bot = bot_creators.get(algorithm, lambda: None)()
+            bot = bot_manager.create_bot(algorithm)
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
 
             start_time = time.time()
             while True:
-                state = game.get_state()
-                if getattr(bot, "is_heuristic", False):
-                    if isinstance(state, np.ndarray):
-                        action = pygame.Vector2(0, 0)
-                    else:
-                        if hasattr(state, 'bullets'):
-                            bullets = state.bullets
-                        elif isinstance(state, dict) and 'bullets' in state:
-                            bullets = state['bullets']
-                        else:
-                            bullets = []
-                        processed_bullets = []
-                        for bullet in bullets:
-                            if isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
-                                processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-                            elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-                                processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
-
-                        action = bot.get_action(processed_bullets)
-                else:
-                    action = bot.get_action(state)
-
+            
+                bullets_in_radius = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
+                
+                processed_bullets = [pygame.Vector2(bullet.x, bullet.y) for bullet in bullets_in_radius]
+                
+                action = bot.get_action(processed_bullets)
+                
                 game.update(action)
+                
+                # Kiểm tra kết thúc game
                 if game.game_over:
                     break
 
@@ -74,10 +52,11 @@ class HeadlessBenchmark:
                 "algorithm": algorithm.name,
                 "run": run_idx + 1,
                 "score": game.score,
-                "duration": time.time() - start_time
+                "duration": time.time() - start_time,
+                "survival_time": game.time_elapsed
             }
         except Exception as e:
-            print(f"[ERROR] Algorithm: {algorithm}, Run: {run_idx + 1}")
+            print(f"[ERROR] Algorithm: {algorithm.name}, Run: {run_idx + 1}")
             traceback.print_exc()
             return None
 
@@ -102,75 +81,64 @@ def setup_environment():
     pygame.init()
     pygame.display.set_mode((1, 1))
 
-def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
-    os.makedirs(base_path, exist_ok=True)
-    if df.empty:
-        print("⚠️ No benchmark results to save.")
-        return None, None
-
-    csv_path = f"{base_path}/benchmark_results.csv"
-    df.to_csv(csv_path, index=False)
-
-    plots_dir = os.path.join(base_path, "individual_plots")
-    os.makedirs(plots_dir, exist_ok=True)
-
-    algorithms = df['algorithm'].unique()
-    plot_paths = []
-
-    for algo in algorithms:
-        algo_df = df[df['algorithm'] == algo].copy()
-        plt.figure(figsize=(10, 6))
-        plt.plot(algo_df['run'], algo_df['score'], marker='o', color='blue')
-        plt.title(f"Performance of {algo} (Raw Scores)", fontsize=16)
-        plt.xlabel("Run Number", fontsize=14)
-        plt.ylabel("Score", fontsize=14)
-        plt.grid(True)
-        plot_path = os.path.join(plots_dir, f"{algo.replace(' ', '_')}_plot.png")
-        plt.savefig(plot_path, bbox_inches='tight')
-        plt.close()
-        plot_paths.append(plot_path)
-
-    plt.figure(figsize=(14, 8))
-    plt.subplots_adjust(right=0.75)
-    for algo in algorithms:
-        algo_df = df[df['algorithm'] == algo].copy()
-        algo_df['cumulative_avg'] = algo_df['score'].expanding().mean()
-        plt.plot(algo_df['run'], algo_df['cumulative_avg'], label=algo)
-
-    plt.title("Algorithm Comparison (Cumulative Averages)", fontsize=16)
-    plt.xlabel("Number of Runs", fontsize=14)
-    plt.ylabel("Cumulative Average Score", fontsize=14)
-    plt.grid(True)
-    plt.legend(title="Algorithms", fontsize=12, bbox_to_anchor=(1.05, 1), loc='upper left')
+def save_results(df, output_dir="benchmark_results"):
+    os.makedirs(output_dir, exist_ok=True)
     
-    combined_plot_path = f"{base_path}/combined_plot.png"
-    plt.savefig(combined_plot_path, bbox_inches='tight')
+    if df.empty:
+        print(" No results to save!")
+        return None, None
+    
+    # Lưu kết quả CSV
+    csv_path = os.path.join(output_dir, "results.csv")
+    df.to_csv(csv_path, index=False)
+    
+    # Hiển thị thống kê
+    print("\n=== Benchmark Summary ===")
+    print(df.groupby('algorithm').agg({
+        'score': ['mean', 'std', 'max'],
+        'survival_time': ['mean', 'max'],
+        'duration': ['mean']
+    }))
+    
+    # Vẽ biểu đồ
+    plt.figure(figsize=(12, 6))
+    df.groupby('algorithm')['score'].mean().sort_values().plot(
+        kind='barh', title='Average Scores by Algorithm'
+    )
+    plt.xlabel('Score')
+    plt.tight_layout()
+    
+    plot_path = os.path.join(output_dir, "performance.png")
+    plt.savefig(plot_path)
     plt.close()
-
-    return csv_path, plot_paths, combined_plot_path
+    
+    print(f"\nResults saved to: {csv_path}")
+    print(f"Plot saved to: {plot_path}")
+    
+    return csv_path, plot_path
 
 if __name__ == "__main__":
+    print(" Starting benchmark...")
     setup_environment()
     
-    algorithms = {
-        "Furthest Safe": DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
-        "Least Danger": DodgeAlgorithm.LEAST_DANGER_PATH,
-        "Least Danger Advanced": DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
-        "Opposite Threat Direction": DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION,
-        "Random Safe Zone": DodgeAlgorithm.RANDOM_SAFE_ZONE,
-        "DL Numpy": DodgeAlgorithm.DL_PARAM_INPUT_NUMPY,
-        "DL Param Torch": DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
-    }
+    # Danh sách thuật toán cần test
+    algorithms = [
+        DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
+        DodgeAlgorithm.LEAST_DANGER_PATH,
+        DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
+        DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION,
+        DodgeAlgorithm.RANDOM_SAFE_ZONE,
+        DodgeAlgorithm.DL_PARAM_INPUT_NUMPY, 
+        DodgeAlgorithm.DL_PARAM_INPUT_TORCH   
+    ]
     
-    benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
-    results_df = benchmark.run(list(algorithms.values()))
+    benchmark = HeadlessBenchmark(num_runs=10, num_threads=4)
+    results_df = benchmark.run(algorithms)
     
-    print(f"✅ Benchmark completed. Total results: {len(results_df)}")
-
     if not results_df.empty:
-        print("📊 Preview of results:")
-        print(results_df.head())
-
-    csv_file, plot_files, combined_plot = save_results(results_df)
+        csv_file, plot_file = save_results(results_df)
+        print("\n Benchmark completed successfully!")
+    else:
+        print("\n Benchmark failed - no results collected")
     
     pygame.quit()
