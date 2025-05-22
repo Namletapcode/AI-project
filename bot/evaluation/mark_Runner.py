@@ -58,13 +58,13 @@ class HeadlessBenchmark:
             bot = bot_creators.get(algorithm, lambda: None)()
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
-            is_heuristic = bot_manager.is_heuristic
+            is_heuristic = getattr(bot, "is_heuristic", False)
             
             start_time = time.time()
             while True:
                 state = game.get_state()
 
-                if getattr(bot, "is_heuristic", False):
+                if is_heuristic:
                     bullets = []
                     if hasattr(state, 'bullets'):
                         bullets = state.bullets
@@ -95,8 +95,9 @@ class HeadlessBenchmark:
                 "score": game.score,
             }
         except Exception as e:
+            import traceback
             print(f"[ERROR] Run failed for {name} (algo={algorithm}): {e}")
-
+            traceback.print_exc()
             return None
 
     def run(self, algorithms):
