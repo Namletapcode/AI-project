@@ -60,7 +60,7 @@ class HeadlessBenchmark:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
             is_heuristic = getattr(bot, "is_heuristic", False)
 
-             while True:
+            while True:
                  state = game.get_state()
                  if is_heuristic:
         
