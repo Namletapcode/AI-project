@@ -17,42 +17,57 @@ from bot.bot_manager import BotManager
 from configs.bot_config import DodgeAlgorithm, SCAN_RADIUS
 
 def one_hot_to_vector(action):
+    """Chuyển đổi one-hot vector thành vector di chuyển"""
     mapping = {
-        0: pygame.Vector2(-1, -1),
-        1: pygame.Vector2(0, -1),
-        2: pygame.Vector2(1, -1),
-        3: pygame.Vector2(-1, 0),
-        4: pygame.Vector2(0, 0),
-        5: pygame.Vector2(1, 0),
-        6: pygame.Vector2(-1, 1),
-        7: pygame.Vector2(0, 1),
-        8: pygame.Vector2(1, 1),
+        0: pygame.Vector2(-1, -1),  # Trái-lên
+        1: pygame.Vector2(0, -1),   # Lên
+        2: pygame.Vector2(1, -1),   # Phải-lên
+        3: pygame.Vector2(-1, 0),   # Trái
+        4: pygame.Vector2(0, 0),    # Đứng yên
+        5: pygame.Vector2(1, 0),    # Phải
+        6: pygame.Vector2(-1, 1),   # Trái-xuống
+        7: pygame.Vector2(0, 1),    # Xuống
+        8: pygame.Vector2(1, 1),    # Phải-xuống
     }
     if isinstance(action, (list, np.ndarray)):
         index = int(np.argmax(action))
         return mapping.get(index, pygame.Vector2(0, 0))
     return pygame.Vector2(0, 0)
 
+def create_bullet_object(x, y):
+    """Tạo bullet object sử dụng lambda"""
+    return type('Bullet', (), {
+        'x': property(lambda self: x),
+        'y': property(lambda self: y),
+        '__repr__': lambda self: f'Bullet({self.x:.1f}, {self.y:.1f})'
+    })()
+
 def process_bullets(bullets):
-    """Chuyển đổi danh sách đạn sang SimpleNamespace có thuộc tính x,y"""
+    """Xử lý danh sách đạn đầu vào thành các object đồng nhất"""
     processed = []
     for bullet in bullets:
         if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-            # Nếu bullet đã có thuộc tính x,y thì giữ nguyên
+            # Nếu đã là object có x,y thì giữ nguyên
             processed.append(bullet)
         elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) >= 2:
-            # Nếu là mảng thì chuyển thành SimpleNamespace
-            bullet_ns = SimpleNamespace()
-            bullet_ns.x = float(bullet[0])
-            bullet_ns.y = float(bullet[1])
-            processed.append(bullet_ns)
+            # Xử lý numpy array/list/tuple
+            processed.append(create_bullet_object(float(bullet[0]), float(bullet[1])))
         elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:
-            # Nếu là dict thì chuyển thành SimpleNamespace
-            bullet_ns = SimpleNamespace()
-            bullet_ns.x = float(bullet['x'])
-            bullet_ns.y = float(bullet['y'])
-            processed.append(bullet_ns)
+            # Xử lý dictionary
+            processed.append(create_bullet_object(float(bullet['x']), float(bullet['y'])))
     return processed
+
+def create_player_state(game):
+    """Tạo player state sử dụng lambda"""
+    return type('PlayerState', (), {
+        'x': property(lambda self: float(game.player.x)),
+        'y': property(lambda self: float(game.player.y)),
+        'velocity_x': 0,
+        'velocity_y': 0,
+        'directions': property(lambda self: game.player.directions),
+        'direction_to_position': lambda self, direction: game.player.direction_to_position(direction),
+        '__repr__': lambda self: f'Player({self.x:.1f}, {self.y:.1f})'
+    })()
 
 class HeadlessBenchmark:
     def __init__(self, num_runs=1, num_threads=4):
@@ -64,8 +79,8 @@ class HeadlessBenchmark:
         try:
             game = Game()
             bot_manager = BotManager(game)
-
             bot = bot_manager.create_bot(algorithm)
+            
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
                 
@@ -74,22 +89,16 @@ class HeadlessBenchmark:
             
             while True:
                 if is_heuristic:
-                    # Lấy đạn và xử lý thành SimpleNamespace có x,y
                     bullets = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
                     processed_bullets = process_bullets(bullets)
                     
-                    # Tạo state phù hợp cho heuristic bot
-                    state = SimpleNamespace(
-                        bullets=processed_bullets,
-                        player=SimpleNamespace(
-                            x=float(game.player.x),
-                            y=float(game.player.y),
-                            velocity_x=0,
-                            velocity_y=0,
-                            directions=game.player.directions,
-                            direction_to_position=game.player.direction_to_position
-                        )
-                    )
+                    # Tạo game state sử dụng lambda
+                    state = type('GameState', (), {
+                        'bullets': processed_bullets,
+                        'player': create_player_state(game),
+                        '__repr__': lambda self: f'GameState(player={self.player}, bullets={len(self.bullets)})'
+                    })()
+                    
                     action = bot.get_action(state)
                 else:
                     state = game.get_state()
@@ -116,6 +125,7 @@ class HeadlessBenchmark:
             return None
 
     def run(self, algorithms):
+        """Chạy benchmark cho tất cả thuật toán"""
         with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
             futures = []
             for name, algo in algorithms.items():
@@ -131,21 +141,25 @@ class HeadlessBenchmark:
         return pd.DataFrame(self.results)
 
 def setup_environment():
+    """Cấu hình môi trường chạy headless"""
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     os.environ["SDL_AUDIODRIVER"] = "dummy"
     pygame.init()
     pygame.display.set_mode((1, 1))
 
 def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
+    """Lưu kết quả benchmark và vẽ biểu đồ"""
     os.makedirs(base_path, exist_ok=True)
     if df.empty:
         print("No results to save!")
         return None, None
 
+    # Lưu file CSV
     csv_path = f"{base_path}/benchmark_results.csv"
     df.to_csv(csv_path, index=False)
     print(f"Results saved to {csv_path}")
 
+    # Vẽ biểu đồ so sánh
     plt.figure(figsize=(14, 8))
     for algo in df['algorithm'].unique():
         algo_df = df[df['algorithm'] == algo]
@@ -168,6 +182,7 @@ if __name__ == "__main__":
     print("Setting up environment...")
     setup_environment()
 
+    # Danh sách thuật toán cần benchmark
     algorithms = {
         "Furthest Safe": DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
         "Least Danger": DodgeAlgorithm.LEAST_DANGER_PATH,
