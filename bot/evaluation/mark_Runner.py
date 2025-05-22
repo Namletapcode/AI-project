@@ -60,27 +60,24 @@ class HeadlessBenchmark:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
             is_heuristic = getattr(bot, "is_heuristic", False)
 
-            while True:
-                state = game.get_state()
-
-                if is_heuristic:
-                    bullets = []
-                    if hasattr(state, 'bullets'):
-                        bullets = state.bullets
-                    elif isinstance(state, dict) and 'bullets' in state:
-                        bullets = state['bullets']
-
-                    processed_bullets = []
-                    for bullet in bullets:
-                        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-                            processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
-                        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
-                            processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-
-                    
+             while True:
+                 state = game.get_state()
+                 if is_heuristic:
+        
                     if isinstance(state, dict):
                         state = SimpleNamespace(**state)
-                    setattr(state, 'bullets', processed_bullets)
+
+                    # Chuẩn hóa bullets thành pygame.Vector2
+                    if hasattr(state, 'bullets'):
+                        processed_bullets = []
+                        for bullet in state.bullets:
+                            if isinstance(bullet, pygame.Vector2):
+                            processed_bullets.append(bullet)
+                            elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
+                                processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
+                            elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+                                processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
+                        state.bullets = processed_bullets
 
                     action = bot.get_action(state)
                 else:
