@@ -74,7 +74,6 @@ class HeadlessBenchmark:
                 "algorithm": name,
                 "run": run_idx + 1,
                 "score": game.score,
-                "duration": time.time() - start_time
             }
         except Exception:
             return None
