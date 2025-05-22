@@ -11,10 +11,10 @@ from types import SimpleNamespace
 project_root = '/content/AI-project'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-
+    
 from game.game_core import Game
 from bot.bot_manager import BotManager
-from configs.bot_config import DodgeAlgorithm
+from configs.bot_config import DodgeAlgorithm, SCAN_RADIUS
 
 def one_hot_to_vector(action):
     mapping = {
@@ -38,41 +38,47 @@ class HeadlessBenchmark:
         self.num_runs = num_runs
         self.num_threads = num_threads
         self.results = []
-
+        
     def _run_single_test(self, name, algorithm, run_idx):
         try:
             game = Game()
             bot_manager = BotManager(game)
+
             bot = bot_manager.create_bot(algorithm)
-
-            is_heuristic = bot_manager.is_heuristic
-
+            if not bot:
+                raise ValueError(f"Unknown algorithm: {algorithm}")
+                
+            is_heuristic = getattr(bot, "is_heuristic", False)
+            start_time = time.time()
+            
             while True:
-                state = game.get_state()
-
                 if is_heuristic:
-                    if isinstance(state, dict):
-                        state = SimpleNamespace(**state)
-
-                    if hasattr(state, 'bullets'):
-                        processed_bullets = []
-                        for bullet in state.bullets:
-                            if isinstance(bullet, pygame.Vector2):
-                                processed_bullets.append(bullet)
-                            elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
-                                processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-                            elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-                                processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
-                        state.bullets = processed_bullets
-
+                    # Lấy đạn trực tiếp từ bullet manager và chuyển đổi sang Vector2
+                    bullets = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
+                    processed_bullets = []
+                    for bullet in bullets:
+                        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+                            processed_bullets.append(pygame.Vector2(bullet.x, bullet.y))
+                        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
+                            processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
+                    
+                    # Tạo state phù hợp cho heuristic bot
+                    state = SimpleNamespace(
+                        bullets=processed_bullets,
+                        player=SimpleNamespace(
+                            x=game.player.x,
+                            y=game.player.y
+                        )
+                    )
                     action = bot.get_action(state)
                 else:
+                    state = game.get_state()
                     action = bot.get_action(state)
                     if isinstance(action, (list, np.ndarray)) and len(action) == 9:
                         action = one_hot_to_vector(action)
 
                 game.update(action)
-
+                
                 if game.game_over:
                     break
 
@@ -80,10 +86,12 @@ class HeadlessBenchmark:
                 "algorithm": name,
                 "run": run_idx + 1,
                 "score": game.score,
+                "duration": time.time() - start_time
             }
+            
         except Exception as e:
+            print(f"Error in {name} run {run_idx + 1}: {str(e)}")
             import traceback
-            print(f"[ERROR] Run failed for {name} (algo={algorithm}): {e}")
             traceback.print_exc()
             return None
 
@@ -97,8 +105,7 @@ class HeadlessBenchmark:
                     ))
 
             for future in futures:
-                result = future.result()
-                if result:
+                if (result := future.result()):
                     self.results.append(result)
 
         return pd.DataFrame(self.results)
@@ -112,46 +119,27 @@ def setup_environment():
 def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     os.makedirs(base_path, exist_ok=True)
     if df.empty:
-        return None, None, None
+        return None, None
 
     csv_path = f"{base_path}/benchmark_results.csv"
     df.to_csv(csv_path, index=False)
 
-    plots_dir = os.path.join(base_path, "individual_plots")
-    os.makedirs(plots_dir, exist_ok=True)
-
-    algorithms = df['algorithm'].unique()
-    plot_paths = []
-    for algo in algorithms:
-        algo_df = df[df['algorithm'] == algo].copy()
-        plt.figure(figsize=(10, 6))
-        plt.plot(algo_df['run'], algo_df['score'], marker='o', color='blue')
-        plt.title(f"Performance of {algo} (Raw Scores)", fontsize=16)
-        plt.xlabel("Run Number", fontsize=14)
-        plt.ylabel("Score", fontsize=14)
-        plt.grid(True)
-        plot_path = os.path.join(plots_dir, f"{algo.replace(' ', '_')}_plot.png")
-        plt.savefig(plot_path, bbox_inches='tight')
-        plt.close()
-        plot_paths.append(plot_path)
-
     plt.figure(figsize=(14, 8))
-    plt.subplots_adjust(right=0.75)
-    for algo in algorithms:
-        algo_df = df[df['algorithm'] == algo].copy()
-        algo_df['cumulative_avg'] = algo_df['score'].expanding().mean()
-        plt.plot(algo_df['run'], algo_df['cumulative_avg'], label=algo)
-    plt.title("Algorithm Comparison (Cumulative Averages)", fontsize=16)
-    plt.xlabel("Number of Runs", fontsize=14)
-    plt.ylabel("Cumulative Average Score", fontsize=14)
+    for algo in df['algorithm'].unique():
+        algo_df = df[df['algorithm'] == algo]
+        plt.plot(algo_df['run'], algo_df['score'], 'o-', label=algo)
+    
+    plt.title("Algorithm Performance Comparison")
+    plt.xlabel("Run Number")
+    plt.ylabel("Score")
+    plt.legend()
     plt.grid(True)
-    plt.legend(title="Algorithms", fontsize=12,
-               bbox_to_anchor=(1.05, 1), loc='upper left')
-    combined_plot_path = f"{base_path}/combined_plot.png"
-    plt.savefig(combined_plot_path, bbox_inches='tight')
+    
+    plot_path = f"{base_path}/performance_comparison.png"
+    plt.savefig(plot_path, bbox_inches='tight')
     plt.close()
-
-    return csv_path, plot_paths, combined_plot_path
+    
+    return csv_path, plot_path
 
 if __name__ == "__main__":
     setup_environment()
@@ -170,5 +158,5 @@ if __name__ == "__main__":
     benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
     results_df = benchmark.run(algorithms)
 
-    csv_file, individual_plots, combined_plot = save_results(results_df)
+    csv_file, plot_file = save_results(results_df)
     pygame.quit()
