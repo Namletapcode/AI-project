@@ -172,6 +172,4 @@ if __name__ == "__main__":
 
     csv_file, individual_plots, combined_plot = save_results(results_df)
 
-   
-
     pygame.quit()
