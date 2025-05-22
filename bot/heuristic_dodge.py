@@ -10,7 +10,6 @@ from bot.base_bot import BaseBot
 from game.game_core import Game
 
 class HeuristicDodgeBot(BaseBot):
-    is_heuristic = True
     def __init__(self, game: "Game", method = DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED):
         super().__init__(game)
         self.method = method

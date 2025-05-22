@@ -4,9 +4,10 @@ import math
 import numpy as np
 from configs.game_config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, UPS,
-    dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE, BASE_UPS
+    dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
 )
-from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS
+from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS, IMG_SIZE
+from utils.bot_helper import get_screen_shot_gray_scale
 from game.bullet_manager import BulletManager
 from game.player import Player
 from menu import Menu
@@ -29,38 +30,37 @@ class Game:
         self.menu=Menu(self.screen)
         self.options_menu= Options_Menu(self.screen,self.font)
     
-    def run(self, bot, mode: str = "perform", render: bool = True, draw_extra: callable = None):
+    def run(self, bot_manager, mode: str = "perform", render: bool = True, draw_extra: callable = None):
         update_timer = 0
         update_interval = 1.0 / UPS
         first_frame = True
-        is_heuristic_bot = getattr(bot, "is_heuristic", False)
-        is_numpy_agent = bot.__class__.__name__.lower().find("numpy") != -1
         if mode == "perform":
-            if not is_heuristic_bot:
-                bot.set_mode("perform")
-                bot.load_model()
+            if not bot_manager.is_heuristic:
+                bot_manager.current_bot.set_mode("perform")
+                bot_manager.current_bot.load_model()
             while True:
                 frame_time = min(self.clock.tick(FPS) / 1000, dt_max)
                 update_timer += frame_time
                 # Use first_frame to update immediately (to avoid not being able to update before drawing)
                 while update_timer >= update_interval or first_frame:
-                    current_state = self.get_state(is_heuristic_bot)
-                    if is_numpy_agent:
-                        current_state = current_state.reshape(len(current_state), 1)
-                    action = bot.get_action(current_state)
-                    self.update(action)
+                    current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
+                    action = bot_manager.current_bot.get_action(current_state)
+                    self.update(None)
+                    if self.score in [250, 251, 252, 253]:
+                        with open("log.txt", "a") as f:
+                            f.write(f"Time: {self.update_counter},\nPlayer: ({self.player.x}, {self.player.y}),\nState: {[idx for idx, val in enumerate(current_state) if val == 1]},\nAction: {action}\n")
                     update_timer -= update_interval
                     first_frame = False
                 if render:
                     self.draw(draw_extra)
         else:
-            bot.train(render)
+            bot_manager.current_bot.train(render)
     def take_action(self, action: np.ndarray, render: bool = True): # for AI agent
         self.update(action)
         if render:
             self.draw()
 
-    def get_state(self, is_heuristic: bool = False):
+    def get_state(self, is_heuristic: bool = False, is_vision: bool = False, is_numpy: bool = True):
         """
         Get current game state as numpy array.
         
@@ -76,18 +76,26 @@ class Game:
         if is_heuristic:
             state = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
         else:
-            bullets_in_radius = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
-            if USE_COMPLEX_SCANNING:
-                sector_flags = self.bullet_manager.get_complex_regions(bullets_in_radius)
+            if is_vision:
+                if not hasattr(self, "img_01") or self.img_01 is None:
+                    self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
+                img_02 = get_screen_shot_gray_scale(self.player.x, self.player.y, IMG_SIZE)
+                state = np.concatenate((self.img_01, img_02), axis=0)
+                self.img_01 = img_02
             else:
-                sector_flags = self.bullet_manager.get_simple_regions(bullets_in_radius)
-            near_wall_info = self.player.get_near_wall_info()
-            
-            # Combine states into single array
-            state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
-            state[:len(sector_flags)] = sector_flags
-            state[len(sector_flags):] = near_wall_info
-            
+                bullets_in_radius = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
+                if USE_COMPLEX_SCANNING:
+                    sector_flags = self.bullet_manager.get_complex_regions(bullets_in_radius)
+                else:
+                    sector_flags = self.bullet_manager.get_simple_regions(bullets_in_radius)
+                near_wall_info = self.player.get_near_wall_info()
+                
+                # Combine states into single array
+                state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
+                state[:len(sector_flags)] = sector_flags
+                state[len(sector_flags):] = near_wall_info
+            if is_numpy:
+                state = state.reshape(len(state), 1)
         return state
     
     def get_reward(self) -> tuple[float, bool]:
@@ -98,7 +106,6 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            # self.bullet_manager.spawn_random_bullet_pattern(event)
 
     def restart_game(self):
         self.player.reset()
@@ -110,6 +117,7 @@ class Game:
 
     def update(self, action: np.ndarray = None):
         self.update_counter += 1
+
         # update logic
         self.check_events()
         if not self.game_over:

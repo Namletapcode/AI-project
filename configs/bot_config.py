@@ -27,3 +27,5 @@ WALL_MARGIN = 30                # Khoảng cách từ tường bắt đầu tín
 USE_COMPLEX_SCANNING = True
 SCAN_RADIUS = 100
 DODGE_ALGORITHM = DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED
+
+IMG_SIZE = 50

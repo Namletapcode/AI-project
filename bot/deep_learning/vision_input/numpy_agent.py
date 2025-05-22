@@ -20,12 +20,11 @@ IMG_SIZE = 50 # 50 x 50 pixel^2
 
 model_path = 'saved_model/vision_numpy_model.npz'
 
-class Agent(BaseAgent):
-
-    def __init__(self, game: Game):
+class VisionNumpyAgent(BaseAgent):
+    def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.epsillon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, model_path, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
         self.reset_self_img()
 
     def reset_self_img(self):
@@ -130,7 +129,7 @@ class Agent(BaseAgent):
                         self.model.update_target_net()
 
                     # save before start new game
-                    agent.model.save()
+                    self.model.save()
 
                 # save the score to plot
                 score = self.get_score()
@@ -168,7 +167,7 @@ class Agent(BaseAgent):
         self.model.load()
 
 if __name__ == '__main__':
-    agent = Agent(Game())
+    agent = VisionNumpyAgent(Game())
     mode = "train"
 
     if mode == "train":

@@ -3,7 +3,7 @@ from collections import namedtuple
 
 SCREEN_WIDTH = 650
 SCREEN_HEIGHT = 650
-GAME_SPEED = 5.0                    # Tốc độ game (1.0 là tốc độ bình thường)
+GAME_SPEED = 1.0                    # Tốc độ game (1.0 là tốc độ bình thường)
 FPS = 60
 BASE_UPS = 60                       # Tốc độ cập nhật game (updates per second) ở GAME_SPEED = 1.0 (Phải là bội số của FPS)
 UPDATE_DELTA_TIME = 1 / BASE_UPS    # delta time cho các lần cập nhật game (seconds)

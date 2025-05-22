@@ -1,7 +1,7 @@
 from game.game_core import Game
 from bot.heuristic_dodge import HeuristicDodgeBot
-from configs.game_config import dt_max, FPS, UPS, UPDATE_DELTA_TIME,SCREEN_HEIGHT,SCREEN_WIDTH
-from configs.bot_config import DodgeAlgorithm, BOT_DRAW
+from configs.game_config import dt_max, FPS, UPS,SCREEN_HEIGHT,SCREEN_WIDTH
+from configs.bot_config import DodgeAlgorithm
 from menu import Menu
 from options_menu import Options_Menu
 import pygame
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Khởi tạo menu
     menu = Menu(screen)
     options_menu = Options_Menu(screen, font)
-    in_menu = True
+    in_menu = False
     in_options = False
     control_mode = "AI"  # Mặc định
     bullet_speed = 5  # Mặc định
@@ -61,10 +61,9 @@ if __name__ == "__main__":
     gui_thread.start()
     game = Game()
     bot_manager = BotManager(game)
-    bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED)
     
-    bot = bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY)
-    game.run(bot, mode="train", render=True, draw_extra=bot_manager.draw_bot_vision)
+    bot_manager.create_bot(DodgeAlgorithm.DL_VISION_INPUT_NUMPY)
+    game.run(bot_manager, mode="perform", render=True, draw_extra=bot_manager.draw_bot_vision)
     clock = pygame.time.Clock()
     
     update_time = 0

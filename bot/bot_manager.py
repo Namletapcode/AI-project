@@ -6,11 +6,15 @@ from utils.draw_utils import draw_sector, draw_complex_sector
 from bot.heuristic_dodge import HeuristicDodgeBot
 from bot.deep_learning.param_input.numpy_agent import ParamNumpyAgent
 from bot.deep_learning.param_input.pytorch_agent import ParamTorchAgent
+from bot.deep_learning.vision_input.numpy_agent import VisionNumpyAgent
 
 class BotManager:
     def __init__(self, game):
         self.game = game
         self.current_bot = None
+        self.is_heuristic = False
+        self.is_vision = False
+        self.is_numpy = True
         
     def create_bot(self, algorithm: DodgeAlgorithm = DODGE_ALGORITHM, load_saved_model: bool = False):
         """Create a bot based on the specified dodge algorithm."""
@@ -22,11 +26,20 @@ class BotManager:
             DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION
         ]:
             self.current_bot = HeuristicDodgeBot(self.game, algorithm)
+            self.is_heuristic = True
         else:
+            self.is_heuristic = False
+            self.is_vision = False
+            self.is_numpy = False
             if algorithm == DodgeAlgorithm.DL_PARAM_INPUT_NUMPY:
                 self.current_bot = ParamNumpyAgent(self.game, load_saved_model)
+                self.is_numpy = True
             elif algorithm == DodgeAlgorithm.DL_PARAM_INPUT_TORCH:
                 self.current_bot = ParamTorchAgent(self.game, load_saved_model)
+            elif algorithm == DodgeAlgorithm.DL_VISION_INPUT_NUMPY:
+                self.current_bot = VisionNumpyAgent(self.game, load_saved_model)
+                self.is_vision = True
+                self.is_numpy = True
         return self.current_bot
     
     def get_action(self, state) -> np.ndarray:
