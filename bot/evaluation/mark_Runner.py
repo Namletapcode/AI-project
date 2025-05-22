@@ -33,23 +33,25 @@ def one_hot_to_vector(action):
         return mapping.get(index, pygame.Vector2(0, 0))
     return pygame.Vector2(0, 0)
 
-def process_bullet(bullet):
-    """Xử lý một viên đạn thành dictionary thống nhất"""
-    if isinstance(bullet, np.ndarray):
-        if bullet.size >= 2:
-            return {'x': float(bullet[0]), 'y': float(bullet[1])}
-    elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-        return {'x': float(bullet.x), 'y': float(bullet.y)}
-    elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:
-        return {'x': float(bullet['x']), 'y': float(bullet['y'])}
-    return None
-
 def process_bullets(bullets):
-    """Xử lý toàn bộ danh sách đạn"""
+    """Chuyển đổi danh sách đạn sang SimpleNamespace có thuộc tính x,y"""
     processed = []
     for bullet in bullets:
-        if processed_bullet := process_bullet(bullet):
-            processed.append(processed_bullet)
+        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+            # Nếu bullet đã có thuộc tính x,y thì giữ nguyên
+            processed.append(bullet)
+        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) >= 2:
+            # Nếu là mảng thì chuyển thành SimpleNamespace
+            bullet_ns = SimpleNamespace()
+            bullet_ns.x = float(bullet[0])
+            bullet_ns.y = float(bullet[1])
+            processed.append(bullet_ns)
+        elif isinstance(bullet, dict) and 'x' in bullet and 'y' in bullet:
+            # Nếu là dict thì chuyển thành SimpleNamespace
+            bullet_ns = SimpleNamespace()
+            bullet_ns.x = float(bullet['x'])
+            bullet_ns.y = float(bullet['y'])
+            processed.append(bullet_ns)
     return processed
 
 class HeadlessBenchmark:
@@ -72,17 +74,20 @@ class HeadlessBenchmark:
             
             while True:
                 if is_heuristic:
+                    # Lấy đạn và xử lý thành SimpleNamespace có x,y
                     bullets = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
                     processed_bullets = process_bullets(bullets)
                     
-                    # Tạo state với định dạng phù hợp
+                    # Tạo state phù hợp cho heuristic bot
                     state = SimpleNamespace(
-                        bullets=[SimpleNamespace(**b) for b in processed_bullets],
+                        bullets=processed_bullets,
                         player=SimpleNamespace(
                             x=float(game.player.x),
                             y=float(game.player.y),
                             velocity_x=0,
-                            velocity_y=0
+                            velocity_y=0,
+                            directions=game.player.directions,
+                            direction_to_position=game.player.direction_to_position
                         )
                     )
                     action = bot.get_action(state)
