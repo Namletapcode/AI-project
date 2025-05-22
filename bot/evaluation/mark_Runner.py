@@ -64,6 +64,7 @@ class HeadlessBenchmark:
                     action = bot.get_action(processed_bullets)
                 else:
                     action = bot.get_action(state)
+                print(f"Run loop - Score: {game.score}, Game Over: {game.game_over}, Action: {action}")
 
                 game.update(action)
                 if game.game_over:
