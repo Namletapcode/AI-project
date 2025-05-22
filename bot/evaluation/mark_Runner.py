@@ -46,30 +46,29 @@ class HeadlessBenchmark:
             start_time = time.time()
             while True:
                 state = game.get_state()
-                """if getattr(bot, "is_heuristic", False):
+                action = None
+                if getattr(bot_manager, "is_heuristic", False):
                     if isinstance(state, np.ndarray):
-                        action = pygame.Vector2(0, 0)
+                        action = pygame.Vector2(0, 0) 
                     else:
+                        bullets = []
                         if hasattr(state, 'bullets'):
                             bullets = state.bullets
                         elif isinstance(state, dict) and 'bullets' in state:
                             bullets = state['bullets']
-                        else:
-                            bullets = []
                         processed_bullets = []
                         for bullet in bullets:
                             if isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
                                 processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
                             elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
                                 processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
-
                         action = bot.get_action(processed_bullets)
-                else:"""
-                action = bot.get_action(state)
-
+                else:
+                    action = bot.get_action(state)
                 game.update(action)
                 if game.game_over:
                     break
+
 
             return {
                 "algorithm": name,
