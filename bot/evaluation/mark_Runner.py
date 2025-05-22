@@ -48,7 +48,7 @@ class HeadlessBenchmark:
             while True:
                 state = game.get_state()
 
-                if bot_manager.is_heuristic:
+                if getattr(bot, "is_heuristic", False):
                     bullets = []
                     if hasattr(state, 'bullets'):
                         bullets = state.bullets
