@@ -47,9 +47,12 @@ def plot_training_progress(scores, mean_scores=None, title='Training...', window
     plt.show(block=False)
     plt.pause(0.05)
 
-import win32gui
-import win32ui
-import win32con
+
+import sys
+if sys.platform == "win32":
+    import win32gui
+    import win32ui
+    import win32con
 import numpy as np
 
 def get_screen_shot_gray_scale(x: float, y: float, img_size: int) -> np.ndarray:
