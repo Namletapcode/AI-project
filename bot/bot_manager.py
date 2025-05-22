@@ -1,100 +1,162 @@
+import time
+import sys
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+from concurrent.futures import ThreadPoolExecutor
+import pygame
 import numpy as np
-from configs.bot_config import (
-    DodgeAlgorithm, DODGE_ALGORITHM,
-    SCAN_RADIUS, USE_COMPLEX_SCANNING, BOT_ACTION, BOT_DRAW)
-from utils.draw_utils import draw_sector, draw_complex_sector
-from bot.heuristic_dodge import HeuristicDodgeBot
-from bot.deep_learning.param_input.numpy_agent import ParamNumpyAgent
-from bot.deep_learning.param_input.pytorch_agent import ParamTorchAgent
-from bot.deep_learning.vision_input.numpy_agent import VisionNumpyAgent
+from types import SimpleNamespace
 
-class BotManager:
-    def __init__(self, game):
-        self.game = game
-        self.current_bot = None
-        self.is_heuristic = False
-        self.is_vision = False
-        self.is_numpy = True
-        
-    def create_bot(self, algorithm: DodgeAlgorithm = DODGE_ALGORITHM, load_saved_model: bool = False):
-        """Create a bot based on the specified dodge algorithm."""
-        if algorithm in [
-            DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
-            DodgeAlgorithm.LEAST_DANGER_PATH,
-            DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
-            DodgeAlgorithm.RANDOM_SAFE_ZONE,
-            DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION
-        ]:
-            self.current_bot = HeuristicDodgeBot(self.game, algorithm)
-            self.is_heuristic = True
-        else:
-            self.is_heuristic = False
-            self.is_vision = False
-            self.is_numpy = False
-            if algorithm == DodgeAlgorithm.DL_PARAM_INPUT_NUMPY:
-                self.current_bot = ParamNumpyAgent(self.game, load_saved_model)
-                self.is_numpy = True
-            elif algorithm == DodgeAlgorithm.DL_PARAM_INPUT_TORCH:
-                self.current_bot = ParamTorchAgent(self.game, load_saved_model)
-            elif algorithm == DodgeAlgorithm.DL_VISION_INPUT_NUMPY:
-                self.current_bot = VisionNumpyAgent(self.game, load_saved_model)
-                self.is_vision = True
-                self.is_numpy = True
-        return self.current_bot
+project_root = '/content/AI-project'
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
     
-    def get_action(self, state) -> np.ndarray:
-        """Get action from current bot"""
-        if self.current_bot and BOT_ACTION:
-            return self.current_bot.get_action(state)
-        return None
+from game.game_core import Game
+from bot.bot_manager import BotManager
+from configs.bot_config import DodgeAlgorithm, SCAN_RADIUS
 
-    def draw_bot_vision(self):
-        """Vẽ vision của bot và hướng di chuyển"""
-        if not self.current_bot or not BOT_DRAW:
-            return
-            
-        player = self.game.player
-        surface = self.game.surface
-        
-        # Vẽ vòng tròn scan
-        player.draw_surround_circle(SCAN_RADIUS)
-        
-        # Vẽ các sectors
-        if USE_COMPLEX_SCANNING:
-            self._draw_complex_sectors(SCAN_RADIUS)
-        else:
-            self._draw_simple_sectors(SCAN_RADIUS)
-            
-        # Tô màu đạn trong vùng scan    
-        self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128,0,128))
-        
-        # Vẽ hướng di chuyển của bot
-        bot_direction = self.get_action()
-        if bot_direction:
-            best_direction_index = np.argmax(bot_direction)
-            if best_direction_index != 8:
-                draw_sector(surface, player.x, player.y, 
-                           50, best_direction_index, (0, 255, 0))
+def one_hot_to_vector(action):
+    mapping = {
+        0: pygame.Vector2(-1, -1),
+        1: pygame.Vector2(0, -1),
+        2: pygame.Vector2(1, -1),
+        3: pygame.Vector2(-1, 0),
+        4: pygame.Vector2(0, 0),
+        5: pygame.Vector2(1, 0),
+        6: pygame.Vector2(-1, 1),
+        7: pygame.Vector2(0, 1),
+        8: pygame.Vector2(1, 1),
+    }
+    if isinstance(action, (list, np.ndarray)):
+        index = int(np.argmax(action))
+        return mapping.get(index, pygame.Vector2(0, 0))
+    return pygame.Vector2(0, 0)
 
-    def _draw_simple_sectors(self, radius: int):
-        """Vẽ các sector đơn giản (chỉ chia theo góc)"""
-        bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
-        sector_flags = self.game.bullet_manager.get_simple_regions(bullets_in_radius)
+class HeadlessBenchmark:
+    def __init__(self, num_runs=1, num_threads=4):
+        self.num_runs = num_runs
+        self.num_threads = num_threads
+        self.results = []
         
-        for i, has_bullet in enumerate(sector_flags):
-            if has_bullet:
-                draw_sector(self.game.surface, self.game.player.x, 
-                           self.game.player.y, radius, i, (255,255,0))
+    def _run_single_test(self, name, algorithm, run_idx):
+        try:
+            game = Game()
+            bot_manager = BotManager(game)
 
-    def _draw_complex_sectors(self, radius: int, num_angle_divisions: int = 8, 
-                            num_radius_divisions: int = 3):
-        """Vẽ các sector phức tạp (chia theo cả góc và bán kính)"""
-        bullets_in_radius = self.game.bullet_manager.get_bullet_in_range(radius)
-        sector_flags = self.game.bullet_manager.get_complex_regions(
-            bullets_in_radius, num_angle_divisions, num_radius_divisions)
+            bot = bot_manager.create_bot(algorithm)
+            if not bot:
+                raise ValueError(f"Unknown algorithm: {algorithm}")
+                
+            is_heuristic = getattr(bot, "is_heuristic", False)
+            start_time = time.time()
             
-        for i, has_bullet in enumerate(sector_flags):
-            if has_bullet:
-                draw_complex_sector(
-                    self.game.surface, self.game.player.x, self.game.player.y,
-                    i, radius, num_angle_divisions, num_radius_divisions, (255,255,0))
+            while True:
+                if is_heuristic:
+                    # Lấy đạn trực tiếp từ bullet manager và chuyển đổi sang Vector2
+                    bullets = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
+                    processed_bullets = []
+                    for bullet in bullets:
+                        if hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+                            processed_bullets.append(pygame.Vector2(bullet.x, bullet.y))
+                        elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
+                            processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
+                    
+                    # Tạo state phù hợp cho heuristic bot
+                    state = SimpleNamespace(
+                        bullets=processed_bullets,
+                        player=SimpleNamespace(
+                            x=game.player.x,
+                            y=game.player.y
+                        )
+                    )
+                    action = bot.get_action(state)
+                else:
+                    state = game.get_state()
+                    action = bot.get_action(state)
+                    if isinstance(action, (list, np.ndarray)) and len(action) == 9:
+                        action = one_hot_to_vector(action)
+
+                game.update(action)
+                
+                if game.game_over:
+                    break
+
+            return {
+                "algorithm": name,
+                "run": run_idx + 1,
+                "score": game.score,
+                "duration": time.time() - start_time
+            }
+            
+        except Exception as e:
+            print(f"Error in {name} run {run_idx + 1}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    def run(self, algorithms):
+        with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
+            futures = []
+            for name, algo in algorithms.items():
+                for i in range(self.num_runs):
+                    futures.append(executor.submit(
+                        self._run_single_test, name, algo, i
+                    ))
+
+            for future in futures:
+                if (result := future.result()):
+                    self.results.append(result)
+
+        return pd.DataFrame(self.results)
+
+def setup_environment():
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    os.environ["SDL_AUDIODRIVER"] = "dummy"
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+
+def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
+    os.makedirs(base_path, exist_ok=True)
+    if df.empty:
+        return None, None
+
+    csv_path = f"{base_path}/benchmark_results.csv"
+    df.to_csv(csv_path, index=False)
+
+    plt.figure(figsize=(14, 8))
+    for algo in df['algorithm'].unique():
+        algo_df = df[df['algorithm'] == algo]
+        plt.plot(algo_df['run'], algo_df['score'], 'o-', label=algo)
+    
+    plt.title("Algorithm Performance Comparison")
+    plt.xlabel("Run Number")
+    plt.ylabel("Score")
+    plt.legend()
+    plt.grid(True)
+    
+    plot_path = f"{base_path}/performance_comparison.png"
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close()
+    
+    return csv_path, plot_path
+
+if __name__ == "__main__":
+    setup_environment()
+
+    algorithms = {
+        "Furthest Safe": DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
+        "Least Danger": DodgeAlgorithm.LEAST_DANGER_PATH,
+        "Least Danger Advanced": DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
+        "Opposite Threat Direction": DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION,
+        "Random Safe Zone": DodgeAlgorithm.RANDOM_SAFE_ZONE,
+        "DL Numpy": DodgeAlgorithm.DL_PARAM_INPUT_NUMPY,
+        "DL Param Torch": DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
+        "DL Vision Input Numpy": DodgeAlgorithm.DL_VISION_INPUT_NUMPY,
+    }
+
+    benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
+    results_df = benchmark.run(algorithms)
+
+    csv_file, plot_file = save_results(results_df)
+    pygame.quit()
