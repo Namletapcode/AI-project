@@ -58,7 +58,7 @@ class HeadlessBenchmark:
                     for bullet in bullets:
                         if isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
                             processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-                         elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+                        elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
                              processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
 
                     action = bot.get_action(processed_bullets)
