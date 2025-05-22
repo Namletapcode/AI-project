@@ -43,26 +43,27 @@ class HeadlessBenchmark:
             if not bot:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
 
+            is_heuristic = getattr(bot, "is_heuristic", False) 
+            
             start_time = time.time()
             while True:
                 state = game.get_state()
-                action = None
-                if getattr(bot_manager, "is_heuristic", False):
-                    if isinstance(state, np.ndarray):
-                        action = pygame.Vector2(0, 0) 
-                    else:
-                        bullets = []
-                        if hasattr(state, 'bullets'):
-                            bullets = state.bullets
-                        elif isinstance(state, dict) and 'bullets' in state:
-                            bullets = state['bullets']
-                        processed_bullets = []
-                        for bullet in bullets:
-                            if isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
-                                processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
-                            elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
-                                processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
-                        action = bot.get_action(processed_bullets)
+                
+                if is_heuristic:
+                    bullets = []
+                    if hasattr(state, 'bullets'):
+                        bullets = state.bullets
+                    elif isinstance(state, dict) and 'bullets' in state:
+                        bullets = state['bullets']
+                        
+                    processed_bullets = []
+                    for bullet in bullets:
+                        if isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
+                            processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
+                        elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
+                            processed_bullets.append(pygame.Vector2(float(bullet.x), float(bullet.y)))
+                        
+                    action = bot.get_action(processed_bullets)
                 else:
                     action = bot.get_action(state)
                 game.update(action)
