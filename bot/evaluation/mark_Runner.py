@@ -160,7 +160,7 @@ if __name__ == "__main__":
     setup_environment()
     
     # Danh sách các thuật toán cần benchmark
-    algorithms = [
+    algorithms = {
         "Furthest Safe": DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
         "Least Danger": DodgeAlgorithm.LEAST_DANGER_PATH,
         "Least Danger Advanced": DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
@@ -168,10 +168,11 @@ if __name__ == "__main__":
         "Random Safe Zone": DodgeAlgorithm.RANDOM_SAFE_ZONE,
         "DL Numpy": DodgeAlgorithm.DL_PARAM_INPUT_NUMPY,
         "DL Param Torch": DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
-    ]
+    }
     
     benchmark = HeadlessBenchmark(num_runs=20, num_threads=4)
-    results_df = benchmark.run(algorithms)
+    results_df = benchmark.run(list(algorithms.values()))
+
     
     csv_file, plot_file = save_results(results_df)
     
