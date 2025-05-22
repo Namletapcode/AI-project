@@ -8,7 +8,7 @@ import pygame
 import numpy as np
 from types import SimpleNamespace
 
-project_root = '/content/e-project'
+project_root = '/content/AI-project'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
     
