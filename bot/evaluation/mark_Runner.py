@@ -114,7 +114,7 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     # Get unique algorithms
     algorithms = df['algorithm'].unique()
     
-    # Create individual plots for each algorithm
+    # Create individual plots for each algorithm 
     plot_paths = []
     for algo in algorithms:
         algo_df = df[df['algorithm'] == algo].copy()
@@ -126,6 +126,8 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
         plt.xlabel("Run Number", fontsize=14)
         plt.ylabel("Score", fontsize=14)
         plt.grid(True)
+        
+       
         
         # Save individual plot
         plot_path = os.path.join(plots_dir, f"{algo.replace(' ', '_')}_plot.png")
@@ -167,9 +169,11 @@ if __name__ == "__main__":
         "DL Param Torch": DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
     }
 
-    benchmark = HeadlessBenchmark(num_runs=30, num_threads=4)
+    benchmark = HeadlessBenchmark(num_runs=50, num_threads=4)
     results_df = benchmark.run(algorithms)
 
     csv_file, individual_plots, combined_plot = save_results(results_df)
+
+    
 
     pygame.quit()
