@@ -11,7 +11,7 @@ from types import SimpleNamespace
 project_root = '/content/AI-project'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-    
+
 from game.game_core import Game
 from bot.bot_manager import BotManager
 from configs.bot_config import DodgeAlgorithm
@@ -38,41 +38,27 @@ class HeadlessBenchmark:
         self.num_runs = num_runs
         self.num_threads = num_threads
         self.results = []
-        
+
     def _run_single_test(self, name, algorithm, run_idx):
         try:
             game = Game()
             bot_manager = BotManager(game)
+            bot = bot_manager.create_bot(algorithm)
 
-            bot_creators = {
-                DodgeAlgorithm.FURTHEST_SAFE_DIRECTION: lambda: bot_manager.create_bot(DodgeAlgorithm.FURTHEST_SAFE_DIRECTION),
-                DodgeAlgorithm.LEAST_DANGER_PATH: lambda: bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH),
-                DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED: lambda: bot_manager.create_bot(DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED),
-                DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION: lambda: bot_manager.create_bot(DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION),
-                DodgeAlgorithm.RANDOM_SAFE_ZONE: lambda: bot_manager.create_bot(DodgeAlgorithm.RANDOM_SAFE_ZONE),
-                DodgeAlgorithm.DL_PARAM_INPUT_NUMPY: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY),
-                DodgeAlgorithm.DL_PARAM_INPUT_TORCH: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_TORCH),
-                DodgeAlgorithm.DL_VISION_INPUT_NUMPY: lambda: bot_manager.create_bot(DodgeAlgorithm.DL_VISION_INPUT_NUMPY)
-            }
-
-            bot = bot_creators.get(algorithm, lambda: None)()
-            if not bot:
-                raise ValueError(f"Unknown algorithm: {algorithm}")
-            is_heuristic = getattr(bot, "is_heuristic", False)
+            is_heuristic = bot_manager.is_heuristic
 
             while True:
                 state = game.get_state()
+
                 if is_heuristic:
-        
                     if isinstance(state, dict):
                         state = SimpleNamespace(**state)
 
-                    # Chuẩn hóa bullets thành pygame.Vector2
                     if hasattr(state, 'bullets'):
                         processed_bullets = []
                         for bullet in state.bullets:
                             if isinstance(bullet, pygame.Vector2):
-                            processed_bullets.append(bullet)
+                                processed_bullets.append(bullet)
                             elif isinstance(bullet, (list, tuple, np.ndarray)) and len(bullet) == 2:
                                 processed_bullets.append(pygame.Vector2(float(bullet[0]), float(bullet[1])))
                             elif hasattr(bullet, 'x') and hasattr(bullet, 'y'):
@@ -111,7 +97,8 @@ class HeadlessBenchmark:
                     ))
 
             for future in futures:
-                if (result := future.result()):
+                result = future.result()
+                if result:
                     self.results.append(result)
 
         return pd.DataFrame(self.results)
@@ -130,7 +117,6 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     csv_path = f"{base_path}/benchmark_results.csv"
     df.to_csv(csv_path, index=False)
 
-    # Create a directory for individual plots
     plots_dir = os.path.join(base_path, "individual_plots")
     os.makedirs(plots_dir, exist_ok=True)
 
@@ -159,12 +145,12 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
     plt.xlabel("Number of Runs", fontsize=14)
     plt.ylabel("Cumulative Average Score", fontsize=14)
     plt.grid(True)
-    plt.legend(title="Algorithms", fontsize=12, 
+    plt.legend(title="Algorithms", fontsize=12,
                bbox_to_anchor=(1.05, 1), loc='upper left')
     combined_plot_path = f"{base_path}/combined_plot.png"
     plt.savefig(combined_plot_path, bbox_inches='tight')
     plt.close()
-    
+
     return csv_path, plot_paths, combined_plot_path
 
 if __name__ == "__main__":
