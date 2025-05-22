@@ -95,7 +95,8 @@ class HeadlessBenchmark:
                 "score": game.score,
             }
         except Exception as e:
-            print(f"[ERROR] Run failed: {e}")
+            print(f"[ERROR] Run failed for {name} (algo={algorithm}): {e}")
+
             return None
 
     def run(self, algorithms):
