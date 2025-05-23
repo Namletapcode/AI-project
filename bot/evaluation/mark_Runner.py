@@ -120,6 +120,7 @@ if __name__ == "__main__":
 
     print(" Đã lưu kết quả và biểu đồ vào Google Drive.")
 """
+import multiprocessing
 import os
 import sys
 import pandas as pd
