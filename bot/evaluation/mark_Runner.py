@@ -114,7 +114,7 @@ if __name__ == "__main__":
         all_results.extend(results)
 
 
-    """dl_algorithms = [
+    dl_algorithms = [
         DodgeAlgorithm.DL_PARAM_INPUT_NUMPY,
         DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
         DodgeAlgorithm.DL_VISION_INPUT_NUMPY,
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         print(f"\n=== Benchmarking Deep Learning Bot: {alg.name} ===")
         results = run_benchmark_parallel(alg, num_episodes=10, num_workers=4)
         all_results.extend(results)
-"""
+        
 
     df = pd.DataFrame(all_results)
     save_results(df)
