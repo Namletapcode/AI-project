@@ -1,25 +1,23 @@
 import multiprocessing
-import pandas as pd
+import csv   # Bạn thiếu import csv
 import os
 import sys 
 
-import sys
 project_root = '/content/AI-project'
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from game.game_core import Game
 from bot.bot_manager import BotManager
-from configs.bot_configs import DodgeAlgorithm
+from configs.bot_config import DodgeAlgorithm
 
 
-def run_singel_episode(algorithm,episode_index):
-    game= Game()
+def run_single_episode(algorithm, episode_index):  
+    game = Game()
     bot_manager = BotManager(game)
-    bot_manager.creat_bot(algorithm, load_saved_model =True)
+    bot_manager.create_bot(algorithm, load_saved_model=True)  
 
     game_over = False 
-
 
     while not game_over:
         state = game.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
@@ -34,10 +32,11 @@ def run_singel_episode(algorithm,episode_index):
         "episode": episode_index,
         "score": score,
     }
+
 def run_parallel_benchmark(algorithm, num_episodes=10):
     pool = multiprocessing.Pool(processes=num_episodes)
     args = [(algorithm, i) for i in range(num_episodes)]
-    results = pool.starmap(run_single_episode, args)
+    results = pool.starmap(run_single_episode, args)  # sửa hàm đúng tên
     pool.close()
     pool.join()
     return results
