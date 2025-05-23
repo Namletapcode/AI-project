@@ -158,7 +158,7 @@ def run_single_episode(algorithm, episode_index):
     }
 
 
-def run_benchmark_parallel(algorithm, num_episodes=10, num_workers=4):
+def run_benchmark_parallel(algorithm, num_episodes=30, num_workers=4):
     pool = multiprocessing.Pool(processes=num_workers)
     args = [(algorithm, i) for i in range(num_episodes)]
     results = pool.starmap(run_single_episode, args)
@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     for alg in algorithms:
         print(f"\n=== Benchmarking {alg.name} ===")
-        results = run_benchmark_parallel(alg, num_episodes=10, num_workers=4)
+        results = run_benchmark_parallel(alg, num_episodes=30, num_workers=4)
         all_results.extend(results)
 
     df = pd.DataFrame(all_results)
