@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
     for alg in heuristic_algorithms:
         print(f"\n=== Benchmarking {alg.name} ===")
-        results = run_benchmark_sequential(alg, num_episodes=10)
+        results = run_benchmark_parallel(algorithm, num_episodes=10, num_workers=4)
         all_results.extend(results)
 
     df = pd.DataFrame(all_results)
