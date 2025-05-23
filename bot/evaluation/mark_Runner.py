@@ -214,7 +214,7 @@ def save_results(df, base_path="/content/drive/MyDrive/game_ai"):
 
 
 if __name__ == "__main__":
-    heuristic_algorithms = [
+    algorithms = [
         DodgeAlgorithm.FURTHEST_SAFE_DIRECTION,
         DodgeAlgorithm.LEAST_DANGER_PATH,
         DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED,
