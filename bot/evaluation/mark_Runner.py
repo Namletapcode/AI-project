@@ -18,7 +18,7 @@ if project_root not in sys.path:
 # Import game components
 from game.game_core import Game
 from bot.bot_manager import BotManager
-from configs.bot_config import DodgeAlgorithm
+from configs.bot_config import DodgeAlgorithm,SCAN_RADIUS
 from configs.game_config import BOX_LEFT, BOX_TOP, BOX_SIZE
 class ColabBenchmark:
     def __init__(self, num_runs=5, num_threads=4):
