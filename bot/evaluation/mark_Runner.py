@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     all_results = []
 
-    for alg in heuristic_algorithms:
+    for alg in algorithms:
         print(f"\n=== Benchmarking {alg.name} ===")
         results = run_benchmark_parallel(algorithm, num_episodes=10, num_workers=4)
         all_results.extend(results)
