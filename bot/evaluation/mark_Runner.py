@@ -68,10 +68,9 @@ if __name__ == "__main__":
         dict_writer.writerows(results)
     
     print(f"Đã lưu kết quả benchmark {alg.name} vào {csv_path}")"""
-import multiprocessing
 import csv
-import os
 import sys
+import os
 
 project_root = '/content/AI-project'
 if project_root not in sys.path:
@@ -85,7 +84,7 @@ from configs.bot_config import DodgeAlgorithm
 def run_single_episode(algorithm, episode_index):
     game = Game()
     game.restart_game()
-    game.update_counter = episode_index
+    
     bot_manager = BotManager(game)
     bot_manager.create_bot(algorithm, load_saved_model=False)  
 
@@ -106,12 +105,10 @@ def run_single_episode(algorithm, episode_index):
     }
 
 
-def run_parallel_benchmark(algorithm, num_episodes=10):
-    pool = multiprocessing.Pool(processes=4)
-    args = [(algorithm, i) for i in range(num_episodes)]
-    results = pool.starmap(run_single_episode, args)
-    pool.close()
-    pool.join()
+def run_benchmark_sequential(algorithm, num_episodes=10):
+    results = []
+    for i in range(num_episodes):
+        results.append(run_single_episode(algorithm, i))
     return results
 
 
@@ -126,7 +123,7 @@ if __name__ == "__main__":
 
     for alg in heuristic_algorithms:
         print(f"\n=== Benchmarking {alg.name} ===")
-        results = run_parallel_benchmark(alg, num_episodes=10)
+        results = run_benchmark_sequential(alg, num_episodes=10)
 
         if not results:
             print(f"Không có kết quả nào cho {alg.name}")
@@ -139,5 +136,4 @@ if __name__ == "__main__":
             dict_writer.writeheader()
             dict_writer.writerows(results)
 
-        print(f" Đã lưu kết quả benchmark {alg.name} vào {csv_path}")
-
+        print(f"Đã lưu kết quả benchmark {alg.name} vào {csv_path}")
