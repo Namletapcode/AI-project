@@ -1,3 +1,4 @@
+
 import time
 import sys
 import os
@@ -7,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pygame
 import numpy as np
 from types import SimpleNamespace
-from google.colab import driv
+
 
 # Set up project root
 project_root = '/content/AI-project'
