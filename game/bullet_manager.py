@@ -247,7 +247,7 @@ class BulletManager:
             bullet.draw(screen)
 
     def reset(self, update_count: int = 0):
-        random.seed(15)
+        #random.seed(15)
         self.bullets = pygame.sprite.Group()
         self.spawn_time = 0
         self.angle_offset = 0
