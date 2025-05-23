@@ -107,7 +107,7 @@ def run_single_episode(algorithm, episode_index):
 
 
 def run_parallel_benchmark(algorithm, num_episodes=10):
-    pool = multiprocessing.Pool(processes=num_episodes)
+    pool = multiprocessing.Pool(processes=4)
     args = [(algorithm, i) for i in range(num_episodes)]
     results = pool.starmap(run_single_episode, args)
     pool.close()
