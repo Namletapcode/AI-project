@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
     for alg in algorithms:
         print(f"\n=== Benchmarking {alg.name} ===")
-        results = run_benchmark_parallel(algorithm, num_episodes=10, num_workers=4)
+        results = run_benchmark_parallel(alg, num_episodes=10, num_workers=4)
         all_results.extend(results)
 
     df = pd.DataFrame(all_results)
