@@ -10,7 +10,8 @@ if project_root not in sys.path:
 
 from game.game_core import Game
 from bot.bot_manager import BotManager
-from configs.bot_configs import DogeAlgorithm
+from configs.bot_configs import DodgeAlgorithm
+
 
 def run_singel_episode(algorithm,episode_index):
     game= Game()
