@@ -82,7 +82,7 @@ class BenchmarkRunner:
         if hasattr(current_bot, 'is_heuristic') and current_bot.is_heuristic:
             bullets = game.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
             return np.array([[b.x, b.y] if hasattr(b, 'x') else [b.centerx, b.centery] for b in bullets], 
-                          dtype=np.float32)
+                          dtype='float64')
         
         elif hasattr(current_bot, 'is_vision') and current_bot.is_vision:
             return game.get_screen_image()
@@ -121,7 +121,7 @@ class BenchmarkRunner:
             (player.x - BOX_LEFT) / BOX_SIZE,
             (player.y - BOX_TOP) / BOX_SIZE,
             *bullet_data
-        ], dtype=np.float32)
+        ], dtype='float64')
 
 def setup_environment():
     """Set up headless pygame environment"""
