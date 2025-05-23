@@ -52,7 +52,7 @@ def run_parallel_benchmark(algorithm, num_episodes=10):
 if __name__ == "__main__":
     alg = DodgeAlgorithm.DL_PARAM_INPUT_NUMPY  
     results = run_parallel_benchmark(alg, num_episodes=10)
-    print result 
+    print (result )
     
     csv_path = f"benchmark_{alg.name}.csv"
     keys = results[0].keys()
