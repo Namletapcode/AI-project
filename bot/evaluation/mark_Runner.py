@@ -12,20 +12,28 @@ from bot.bot_manager import BotManager
 from configs.bot_config import DodgeAlgorithm
 
 
-def run_single_episode(algorithm, episode_index):  
+def run_single_episode(algorithm, episode_index):
     game = Game()
+    game.restart_game()  
     bot_manager = BotManager(game)
-    bot_manager.create_bot(algorithm, load_saved_model=True)  
+    bot_manager.create_bot(algorithm, load_saved_model=True)
 
-    game_over = False 
+    if not bot_manager.is_heuristic:
+        bot_manager.current_bot.set_mode("perform")
+        bot_manager.current_bot.load_model()
+
+    game_over = False
 
     while not game_over:
         state = game.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
         action = bot_manager.current_bot.get_action(state)
         game.update(action)
         reward, game_over = game.get_reward()
-    
-    score = game.score 
+
+    score = game.score
+    print(f"Episode {episode_index}, Score: {score}")
+    print(f"Bot mode: {bot_manager.current_bot.mode}")
+
 
     return {
         "algorithm": algorithm.name,
@@ -44,6 +52,7 @@ def run_parallel_benchmark(algorithm, num_episodes=10):
 if __name__ == "__main__":
     alg = DodgeAlgorithm.DL_PARAM_INPUT_NUMPY  
     results = run_parallel_benchmark(alg, num_episodes=10)
+    print result 
     
     csv_path = f"benchmark_{alg.name}.csv"
     keys = results[0].keys()
