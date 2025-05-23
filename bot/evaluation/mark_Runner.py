@@ -85,6 +85,7 @@ from configs.bot_config import DodgeAlgorithm
 def run_single_episode(algorithm, episode_index):
     game = Game()
     game.restart_game()
+    game.update_counter = episode_index
     bot_manager = BotManager(game)
     bot_manager.create_bot(algorithm, load_saved_model=False)  
 
