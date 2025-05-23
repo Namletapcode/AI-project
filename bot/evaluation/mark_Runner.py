@@ -152,16 +152,17 @@ def run_single_episode(algorithm, episode_index):
     print(f"Episode {episode_index}, Score: {score}")
     return {
         "algorithm": algorithm.name,
-        "episode": episode_index,
         "run": episode_index + 1,
         "score": score,
     }
 
 
-def run_benchmark_sequential(algorithm, num_episodes=10):
-    results = []
-    for i in range(num_episodes):
-        results.append(run_single_episode(algorithm, i))
+def run_benchmark_parallel(algorithm, num_episodes=10, num_workers=4):
+    pool = multiprocessing.Pool(processes=num_workers)
+    args = [(algorithm, i) for i in range(num_episodes)]
+    results = pool.starmap(run_single_episode, args)
+    pool.close()
+    pool.join()
     return results
 
 
@@ -231,4 +232,4 @@ if __name__ == "__main__":
     df = pd.DataFrame(all_results)
     save_results(df)
 
-    print(" Đã lưu kết quả và biểu đồ vào Google Drive.")
+    print("Đã lưu kết quả và biểu đồ vào Google Drive.")
