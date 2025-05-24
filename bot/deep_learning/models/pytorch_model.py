@@ -5,13 +5,14 @@ import torch.nn.functional as F
 import os
 
 class Linear_QNet(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_dim=256, model_path='saved_model/param_pytorch_model.pth', load_saved_model: bool = True):
+    def __init__(self, state_dim, action_dim, hidden_dim=256, model_path: str=None, load_saved_model: bool = True):
         super().__init__()
         
         self.model_path = model_path
         
-        folder_path = os.path.dirname(self.model_path)
-        os.makedirs(folder_path, exist_ok=True)
+        if model_path is not None:
+            folder_path = os.path.dirname(self.model_path)
+            os.makedirs(folder_path, exist_ok=True)
         
         if load_saved_model and os.path.exists(self.model_path):
             self.load()

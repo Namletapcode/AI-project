@@ -1,9 +1,16 @@
 import matplotlib.pyplot as plt
-import pygame
+import pygame, os
 
-plt.ion()
+plt.ion()  # Bật chế độ tương tác
 
-def plot_training_progress(scores, mean_scores=None, title='Training...', window_size= 100):
+def plot_training_progress(
+    scores,
+    mean_scores=None,
+    title='Training...',
+    window_size= 100,
+    headless=False,
+    save_dir=""
+):
     """
     Plot training progress in real-time
     
@@ -30,6 +37,7 @@ def plot_training_progress(scores, mean_scores=None, title='Training...', window
         computing the average at each valid position (i.e., where the full window fits).
         """
         return np.convolve(data, np.ones(window)/window, mode='valid')
+
     plt.clf()
     plt.plot(scores, label='Score')
     # plt.ylim(ymin=0)
@@ -44,9 +52,13 @@ def plot_training_progress(scores, mean_scores=None, title='Training...', window
     plt.title(title)
     plt.xlabel('Number of Games')
     plt.ylabel('Score')
-    plt.legend()
-    plt.show(block=False)
-    plt.pause(0.05)
+    plt.legend() # Show annotate
+    
+    if save_dir is not None:
+        os.makedirs(os.path.dirname(save_dir), exist_ok=True) # Create folder
+        plt.savefig(save_dir)
+    if not headless:
+        plt.pause(0.05)
 
 
 import sys
@@ -145,27 +157,6 @@ def get_screen_shot_blue_channel(x: float, y: float, img_size: int, surface: pyg
     # Normalize và flatten về 1 chiều
     return (cropped / 255.0).reshape(-1, 1)  # shape: (img_size*img_size, 1)
 
-def show_grayscale_ndarray(img_array: np.ndarray, img_size: int, title: str = "Grayscale Input"):
-    """
-    Hiển thị ảnh từ ndarray (grayscale) sử dụng matplotlib.
-
-    Args:
-        img_array (np.ndarray): Mảng ảnh đầu vào, shape = (n, 1), giá trị từ 0.0 đến 1.0.
-        img_size (int): Kích thước cạnh ảnh vuông.
-        title (str): Tiêu đề ảnh hiển thị.
-    """
-
-    # Chuyển từ vector cột về ảnh 2D
-    img_2d = img_array.reshape((img_size, img_size))
-
-    if not hasattr(show_grayscale_ndarray, "fig") or show_grayscale_ndarray.fig is None:
-        plt.figure(figsize=(4, 4))
-    plt.clf()
-    plt.imshow(img_2d, cmap='gray', vmin=0, vmax=1)
-    plt.title(title)
-    plt.axis('off')
-    plt.draw()
-    plt.pause(0.05)
 import cv2
 
 def show_numpy_to_image(img: np.ndarray, img_size: int):

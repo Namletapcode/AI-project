@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-model_file = 'saved_model/spv_numpy_model.npz'
+model_file = 'saved_files/spv_numpy/spv_numpy_model.npz'
 
 class Model:
 

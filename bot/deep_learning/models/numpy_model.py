@@ -3,7 +3,7 @@ import os
 
 class Model:
 
-    def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.001, model_path='saved_model/param_numpy_model.npz', load_saved_model: bool = True):
+    def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.001, model_path: str=None, load_saved_model: bool = True):
 
         self.learning_rate = learning_rate
         self.model_path = model_path
@@ -70,13 +70,19 @@ class Model:
     
     def set_model_path(self, model_path: str) -> None:
         self.model_path = model_path
+        
+    def soft_update(self, tau=0.005):
+        self.target_weight_1= tau * self.main_weight_1 + (1 - tau) * self.target_weight_1
+        self.target_bias_1  = tau * self.main_bias_1 + (1 - tau) * self.target_bias_1
+        self.target_weight_2= tau * self.main_weight_2 + (1 - tau) * self.target_weight_2
+        self.target_bias_2  = tau * self.main_bias_2 + (1 - tau) * self.target_bias_2
 
-    def update_target_net(self) -> None:
-        alpha = 0.99
-        self.target_weight_1= alpha * self.target_weight_1 + (1 - alpha) * self.main_weight_1
-        self.target_bias_1  = alpha * self.target_bias_1 + (1 - alpha) * self.main_bias_1
-        self.target_weight_2= alpha * self.target_weight_2 + (1 - alpha) * self.main_weight_2
-        self.target_bias_2  = alpha * self.target_bias_2 + (1 - alpha) * self.main_bias_2
+    def hard_update(self):
+        self.target_weight_1= self.main_weight_1.copy()
+        self.target_bias_1  = self.main_bias_1.copy()
+        self.target_weight_2= self.main_weight_2.copy()
+        self.target_bias_2  = self.main_bias_2.copy()
+        
     
     def save(self) -> None:
         np.savez(self.model_path,
@@ -90,6 +96,8 @@ class Model:
                  target_bias_2=self.target_bias_2)
     
     def load(self) -> None:
+        if not os.path.exists(self.model_path):
+            raise FileNotFoundError(f"Model file '{self.model_path}' not found. Please train the model or check the path.")
         data = np.load(self.model_path)
         
         # Gán lại trọng số và bias

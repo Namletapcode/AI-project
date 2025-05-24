@@ -2,6 +2,7 @@ import torch
 import random
 import itertools
 import numpy as np
+from datetime import datetime
 
 if __name__ == "__main__":
     # only re-direct below if running this file
@@ -12,7 +13,7 @@ from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
 from bot.deep_learning.models.pytorch_model import Linear_QNet, QTrainer
 from bot.heuristic_dodge import HeuristicDodgeBot
-from configs.bot_config import DodgeAlgorithm
+from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
 from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100_000
@@ -22,12 +23,14 @@ GAMMA = 0.95
 EPSILON = 1.0
 EPSILON_DECAY = 0.998
 MIN_EPSILON = 0.1
-NETWORK_UPDATE_FREQ = 500
+NETWORK_UPDATE_FREQ = 1000
 
 HEURISTIC_METHOD = DodgeAlgorithm.LEAST_DANGER_PATH
 IMITATION_PROBABILITY = 0.2 # 20% action selected based on heuristic_bot
 
-model_path = 'saved_model/param_pytorch_model.pth'
+MODEL_PATH = 'saved_files/param_pytorch/param_pytorch_model.pth'
+GRAPH_PATH = 'saved_files/param_pytorch/param_pytorch_training.png'
+LOG_PATH = 'saved_files/param_pytorch/param_pytorch_log.log'
 
 class ParamTorchAgent(BaseAgent):
 
@@ -36,7 +39,7 @@ class ParamTorchAgent(BaseAgent):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.policy_net = Linear_QNet(
-            28, 9, model_path=model_path, load_saved_model=load_saved_model
+            28, 9, model_path=MODEL_PATH, load_saved_model=load_saved_model
             ).to(self.device)
         #warning: the number of neurals in first layer must match the size of game.get_state()
         
@@ -53,19 +56,20 @@ class ParamTorchAgent(BaseAgent):
         self.set_mode("train")
         rewards_per_episode = []
         scores_per_episode = []
-        best_reward = -999999
+        best_score = -999999
         step_count = 0
+            
         for episode in itertools.count():
             self.restart_game()
             self.number_of_games += 1
-            # get old state
+            # get the current game state
             current_state = self.get_state()
             
             game_over = False
             episode_reward = 0
             episode_score = 0
             
-            while not game_over and episode_reward < self.stop_on_reward:
+            while not game_over and episode_score < self.stop_on_score:
 
                 # get move
                 # Convert state to tensor efficiently
@@ -109,14 +113,20 @@ class ParamTorchAgent(BaseAgent):
                     next_state_tensor, game_over)
                 step_count += 1
                 current_state = next_state
+                
+            # if game over then train long memory and start again
             rewards_per_episode.append(episode_reward)
             scores_per_episode.append(episode_score)
 
-            if episode_reward >= self.stop_on_reward:
+            if episode_score >= self.stop_on_score:
                 print(f"Game {self.number_of_games} finished after {episode} episodes")
                 break
-            if episode_reward > best_reward:
-                best_reward = episode_reward
+            if episode_score > best_score:
+                log_message = f"{datetime.now().strftime(DATE_FORMAT)} Episode {episode}: New best score: {episode_score:0.1f} ({(episode_score-best_score)/best_score*100:+.1f}%)"
+                print(log_message)
+                with open(LOG_PATH, 'a') as log_file:
+                    log_file.write(log_message + '\n')
+                best_score = episode_score
                 self.policy_net.save()
                 
             # train long memory
@@ -126,8 +136,11 @@ class ParamTorchAgent(BaseAgent):
                 # update target network
                 self.target_net.load_state_dict(self.policy_net.state_dict())
                 step_count = 0
-
-            plot_training_progress(scores_per_episode)
+            
+            # Update graph every 5 games
+            if self.number_of_games % 5 == 0:
+                plot_training_progress(scores_per_episode, title='Param_pytorch Training', save_dir=GRAPH_PATH)
+                
             self.epsilon = max(MIN_EPSILON, self.epsilon * EPSILON_DECAY)
     
     def perform(self, render: bool = True):

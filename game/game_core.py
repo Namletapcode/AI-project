@@ -7,12 +7,9 @@ from configs.game_config import (
     dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
 )
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS, IMG_SIZE
-from utils.bot_helper import get_screen_shot_gray_scale, get_screen_shot_blue_channel, show_grayscale_ndarray, show_numpy_to_image
+from utils.bot_helper import get_screen_shot_blue_channel, show_numpy_to_image
 from game.bullet_manager import BulletManager
 from game.player import Player
-from menu import Menu
-from options_menu import Options_Menu
-from configs.game_config import DynamicConfig
 
 class Game:
     def __init__(self):
@@ -20,15 +17,12 @@ class Game:
         self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Touhou")
         self.clock = pygame.time.Clock() 
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.screen_rect = self.surface.get_rect()
         self.update_counter = 0
         self.player = Player(self.surface)
         self.bullet_manager = BulletManager(self.player)
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
-        self.menu=Menu(self.screen)
-        self.options_menu= Options_Menu(self.screen,self.font)
     
     def run(self, bot_manager, mode: str = "perform", render: bool = True, draw_extra: callable = None):
         update_timer = 0
@@ -37,15 +31,18 @@ class Game:
         if mode == "perform":
             if not bot_manager.is_heuristic:
                 bot_manager.current_bot.set_mode("perform")
-                bot_manager.current_bot.load_model()
+                try:
+                    bot_manager.current_bot.load_model()
+                except FileNotFoundError as e:
+                    print(f"[ERROR] {e}")
+                    pygame.quit()
+                    sys.exit(1)
             while True:
                 frame_time = min(self.clock.tick(FPS) / 1000, dt_max)
                 update_timer += frame_time
                 # Use first_frame to update immediately (to avoid not being able to update before drawing)
                 while update_timer >= update_interval or first_frame:
                     current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
-                    # show_grayscale_ndarray(self.img_01, IMG_SIZE)
-                    show_numpy_to_image(self.img_01, IMG_SIZE)
                     action = bot_manager.current_bot.get_action(current_state)
                     self.update(None)
                     if self.score in [250, 251, 252, 253]:
@@ -57,6 +54,7 @@ class Game:
                     self.draw(draw_extra)
         else:
             bot_manager.current_bot.train(render)
+            
     def take_action(self, action: np.ndarray, render: bool = True): # for AI agent
         self.update(action)
         if render:

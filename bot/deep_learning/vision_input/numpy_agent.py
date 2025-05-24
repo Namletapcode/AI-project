@@ -1,12 +1,17 @@
+import numpy as np
+import random
+import itertools
+from datetime import datetime
+
 if __name__ == "__main__":
     import sys, os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+    
 from bot.deep_learning.models.numpy_model import Model
-from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale, show_numpy_to_image, get_screen_shot_blue_channel, show_grayscale_ndarray
 from bot.deep_learning.base_agent import BaseAgent
 from game.game_core import Game
-import numpy as np
-import random
+from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
+from utils.bot_helper import plot_training_progress, show_numpy_to_image
 
 MAX_MEMORY = 10000
 MAX_SAMPLE_SIZE = 1000
@@ -15,16 +20,25 @@ GAMMA = 0.9
 EPSILON = 1
 EPSILON_DECAY = 0.999
 MIN_EPSILON = 0.01
+NETWORK_UPDATE_FREQ = 1000
 
 IMG_SIZE = 50 # 50 x 50 pixel^2
 
-model_path = 'saved_model/vision_numpy_model.npz'
+USE_SOFT_UPDATE = False
+TAU = 0.005
+
+MODEL_PATH = 'saved_files/vision_numpy/vision_numpy_model.npz'
+GRAPH_PATH = 'saved_files/vision_numpy/vision_numpy_training.png'
+LOG_PATH = 'saved_files/vision_numpy/vision_numpy_log.log'
 
 class VisionNumpyAgent(BaseAgent):
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.epsilon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, model_path, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, MODEL_PATH, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
+        
+        self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 250 steps
+        
         self.reset_self_img()
 
     def reset_self_img(self):
@@ -81,61 +95,76 @@ class VisionNumpyAgent(BaseAgent):
     
     def train(self, render: bool = True):
         self.set_mode("train")
-
-        scores = []
-        mean_scores = []
-        sum = 0
-
-        while True:
+        rewards_per_episode = []
+        scores_per_episode = []
+        best_score = -999999
+        step_count = 0
+            
+        for episode in itertools.count():
+            self.restart_game()
+            self.number_of_games += 1
             # get the current game state
             current_state = self.get_state()
 
-            # optional (on or off by comment or not the next line): show what the AI see in real-time
-            self.visualize_state()
+            game_over = False
+            episode_reward = 0
+            episode_score = 0
+            
+            while not game_over and episode_score < self.stop_on_score:
+                
+                # get the move based on the state
+                action = self.get_action(current_state)
 
-            # get the move based on the state
-            action = self.get_action(current_state)
+                # perform action in game
+                self.perform_action(action, render)
 
-            # perform action in game
-            self.perform_action(action, render)
+                # get the new state after performed action
+                next_state = self.get_state()
 
-            # get the new state after performed action
-            next_state = self.get_state()
+                # get the reward of the action
+                reward, game_over = self.get_reward()
+                
+                episode_reward += reward
+                episode_score = self.get_score()
 
-            # get the reward of the action
-            reward, game_over = self.get_reward()
+                # train short memory with the action performed
+                self.train_short_memory(current_state, action, reward, next_state, game_over)
 
-            # train short memory with the action performed
-            self.train_short_memory(current_state, action, reward, next_state, game_over)
-
-            # remember the action and the reward
-            self.remember(current_state, action, reward, next_state, game_over)
+                # remember the action and the reward
+                self.remember(current_state, action, reward, next_state, game_over)
+                
+                step_count += 1
+                current_state = next_state
 
             # if game over then train long memory and start again
-            if game_over:
-                # reduce epsilon / percentage of random move
-                self.epsilon *= EPSILON_DECAY
-                self.epsilon = max(self.epsilon, MIN_EPSILON)
-
-                # increase number of game and train long memory / re-train experience before start new game
-                self.number_of_games += 1
-                self.train_long_memory()
-
-                if self.number_of_games % 10 == 0:
-                    if self.number_of_games % 250 == 0:
-                        self.model.update_target_net()
-
-                    # save before start new game
-                    self.model.save()
-
-                # save the score to plot
-                score = self.get_score()
-                sum += score
-                mean_scores.append(sum / self.number_of_games)
-                scores.append(score)
-                plot_training_progress(scores, mean_scores)
-
-                self.restart_game()
+            rewards_per_episode.append(episode_reward)
+            scores_per_episode.append(episode_score)
+            
+            if episode_score >= self.stop_on_score:
+                print(f"Game {self.number_of_games} finished after {episode} episodes")
+                break
+            if episode_score > best_score:
+                log_message = f"{datetime.now().strftime(DATE_FORMAT)} Episode {episode}: New best score: {episode_score:0.1f} ({(episode_score-best_score)/best_score*100:+.1f}%)"
+                print(log_message)
+                with open(LOG_PATH, 'a') as log_file:
+                    log_file.write(log_message + '\n')
+                best_score = episode_score
+                self.model.save()
+            
+            self.train_long_memory()
+            
+            if not USE_SOFT_UPDATE and step_count >= self.network_update_freq:
+                # update target network
+                self.model.hard_update()
+                step_count = 0
+            
+            # Update graph every 5 games
+            if self.number_of_games % 5 == 0:
+                plot_training_progress(scores_per_episode, title='Vision_numpy Training', save_dir=GRAPH_PATH)
+                
+            # reduce epsilon / percentage of random move
+            self.epsilon *= EPSILON_DECAY
+            self.epsilon = max(self.epsilon, MIN_EPSILON)
 
     def perform(self, render: bool = True):
         self.set_mode("perform")

@@ -10,7 +10,7 @@ GAMMA = 0.9
 EPSILON = 1
 EPSILON_DECAY = 0.95
 MIN_EPSILON = 0.05
-STOP_ON_REWARD = 1000
+STOP_ON_SCORE = 1000000
 
 class BaseAgent:
     """
@@ -26,7 +26,7 @@ class BaseAgent:
         self.model = None  # Placeholder for model, to be defined in subclasses
         self.trainer = None  # Placeholder for trainer, to be defined in subclasses
         self.game = game
-        self.stop_on_reward = STOP_ON_REWARD
+        self.stop_on_score = STOP_ON_SCORE
 
     def set_mode(self, mode: str):
         """
