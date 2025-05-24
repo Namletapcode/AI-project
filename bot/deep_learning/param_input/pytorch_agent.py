@@ -202,7 +202,7 @@ class ParamTorchAgent(BaseAgent):
         self.trainer.train_step(state, action, reward, next_state, done)
     
     def get_state(self) -> np.ndarray:
-        return self.game.get_state(is_heuristic=False)
+        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=False)
     
     def load_model(self):
         self.policy_net.load()

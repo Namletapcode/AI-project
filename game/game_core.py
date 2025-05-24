@@ -7,7 +7,7 @@ from configs.game_config import (
     dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
 )
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS, IMG_SIZE
-from utils.bot_helper import get_screen_shot_gray_scale
+from utils.bot_helper import get_screen_shot_gray_scale, get_screen_shot_blue_channel, show_grayscale_ndarray, show_numpy_to_image
 from game.bullet_manager import BulletManager
 from game.player import Player
 from menu import Menu
@@ -44,6 +44,8 @@ class Game:
                 # Use first_frame to update immediately (to avoid not being able to update before drawing)
                 while update_timer >= update_interval or first_frame:
                     current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
+                    # show_grayscale_ndarray(self.img_01, IMG_SIZE)
+                    show_numpy_to_image(self.img_01, IMG_SIZE)
                     action = bot_manager.current_bot.get_action(current_state)
                     self.update(None)
                     if self.score in [250, 251, 252, 253]:
@@ -79,7 +81,7 @@ class Game:
             if is_vision:
                 if not hasattr(self, "img_01") or self.img_01 is None:
                     self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
-                img_02 = get_screen_shot_gray_scale(self.player.x, self.player.y, IMG_SIZE)
+                img_02 = get_screen_shot_blue_channel(self.player.x, self.player.y, IMG_SIZE, self.surface)
                 state = np.concatenate((self.img_01, img_02), axis=0)
                 self.img_01 = img_02
             else:

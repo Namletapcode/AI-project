@@ -82,8 +82,7 @@ class Supervised_Agent:
         self.number_of_games = 0
 
     def get_state(self) -> np.ndarray:
-        state = self.game.get_state(is_heuristic=False)
-        return state.reshape(len(state), 1)
+        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=True)
     
     def get_action(self, state: np.ndarray) -> np.ndarray:
         action = np.zeros((9,), dtype=np.float64)

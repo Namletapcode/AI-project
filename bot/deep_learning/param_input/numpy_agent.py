@@ -34,8 +34,7 @@ class ParamNumpyAgent(BaseAgent):
         Get the current game state and reshape it to 28x1 for model input
         example: array([1, 1, 0, 0, 0, 1, 0, ...0])
         """
-        state = self.game.get_state(is_heuristic=False)
-        return state.reshape(len(state), 1)
+        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=True)
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         action = np.zeros((9, ), dtype=np.float64)

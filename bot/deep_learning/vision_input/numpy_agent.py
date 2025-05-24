@@ -2,7 +2,7 @@ if __name__ == "__main__":
     import sys, os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from bot.deep_learning.models.numpy_model import Model
-from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale, show_numpy_to_image
+from utils.bot_helper import plot_training_progress, get_screen_shot_gray_scale, show_numpy_to_image, get_screen_shot_blue_channel, show_grayscale_ndarray
 from bot.deep_learning.base_agent import BaseAgent
 from game.game_core import Game
 import numpy as np
@@ -23,7 +23,7 @@ model_path = 'saved_model/vision_numpy_model.npz'
 class VisionNumpyAgent(BaseAgent):
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
-        self.epsillon = EPSILON
+        self.epsilon = EPSILON
         self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, model_path, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
         self.reset_self_img()
 
@@ -32,16 +32,13 @@ class VisionNumpyAgent(BaseAgent):
         self.img_02 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
 
     def get_state(self) -> np.ndarray: # get game state. stack of two consecutive screenshot around player
-        self.img_02 = get_screen_shot_gray_scale(self.game.player.x, self.game.player.y, IMG_SIZE)
-        state = np.concatenate((self.img_01, self.img_02), axis=0)
-        self.img_01 = self.img_02
-        return state
+        return self.game.get_state(is_heuristic=False, is_vision=True, is_numpy=True)
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         move = np.zeros((9, ), dtype=np.float64)
         if self.mode == "train":
             # decise to take a random move or not
-            if random.random() < self.epsillon:
+            if random.random() < self.epsilon:
                 # if yes pick a random move
                 move[random.randint(0, 8)] = 1
             else:
@@ -94,7 +91,7 @@ class VisionNumpyAgent(BaseAgent):
             current_state = self.get_state()
 
             # optional (on or off by comment or not the next line): show what the AI see in real-time
-            show_numpy_to_image(self.img_02, IMG_SIZE)
+            self.visualize_state()
 
             # get the move based on the state
             action = self.get_action(current_state)
@@ -117,8 +114,8 @@ class VisionNumpyAgent(BaseAgent):
             # if game over then train long memory and start again
             if game_over:
                 # reduce epsilon / percentage of random move
-                self.epsillon *= EPSILON_DECAY
-                self.epsillon = max(self.epsillon, MIN_EPSILON)
+                self.epsilon *= EPSILON_DECAY
+                self.epsilon = max(self.epsilon, MIN_EPSILON)
 
                 # increase number of game and train long memory / re-train experience before start new game
                 self.number_of_games += 1
@@ -165,6 +162,9 @@ class VisionNumpyAgent(BaseAgent):
             
     def load_model(self):
         self.model.load()
+        
+    def visualize_state(self):
+        show_numpy_to_image(self.img_02, IMG_SIZE)
 
 if __name__ == '__main__':
     agent = VisionNumpyAgent(Game())
