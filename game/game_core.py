@@ -24,7 +24,7 @@ class Game:
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
     
-    def run(self, bot_manager, mode: str = "perform", render: bool = True, draw_extra: callable = None):
+    def run(self, bot_manager, mode: str = "perform", render: bool = True):
         update_timer = 0
         update_interval = 1.0 / UPS
         first_frame = True
@@ -44,14 +44,14 @@ class Game:
                 while update_timer >= update_interval or first_frame:
                     current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
                     action = bot_manager.current_bot.get_action(current_state)
-                    self.update(None)
+                    self.update(action)
                     if self.score in [250, 251, 252, 253]:
                         with open("log.txt", "a") as f:
                             f.write(f"Time: {self.update_counter},\nPlayer: ({self.player.x}, {self.player.y}),\nState: {[idx for idx, val in enumerate(current_state) if val == 1]},\nAction: {action}\n")
                     update_timer -= update_interval
                     first_frame = False
                 if render:
-                    self.draw(draw_extra)
+                    self.draw(bot_manager.draw_bot_vision, current_state)
         else:
             bot_manager.current_bot.train(render)
             
@@ -133,13 +133,13 @@ class Game:
             if keys[pygame.K_RETURN]:
                 self.restart_game()
 
-    def draw(self, draw_extra: callable = None):
+    def draw(self, draw_extra: callable = None, current_state: np.ndarray = None):
         # re-draw surface
         self.surface.fill((0, 0, 0))
         self.draw_box()
         
         if draw_extra:
-            draw_extra()
+            draw_extra(current_state)
             
         self.player.draw()
         self.bullet_manager.draw(self.surface)

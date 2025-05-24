@@ -47,8 +47,8 @@ class BotManager:
         if self.current_bot and BOT_ACTION:
             return self.current_bot.get_action(state)
         return None
-
-    def draw_bot_vision(self):
+    
+    def draw_bot_vision(self, state):
         """Vẽ vision của bot và hướng di chuyển"""
         if not self.current_bot or not BOT_DRAW:
             return
@@ -69,12 +69,11 @@ class BotManager:
         self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128,0,128))
         
         # Vẽ hướng di chuyển của bot
-        bot_direction = self.get_action()
-        if bot_direction:
-            best_direction_index = np.argmax(bot_direction)
-            if best_direction_index != 8:
-                draw_sector(surface, player.x, player.y, 
-                           50, best_direction_index, (0, 255, 0))
+        bot_direction = self.get_action(state)
+        best_direction_index = np.argmax(bot_direction)
+        if best_direction_index != 8:
+            draw_sector(surface, player.x, player.y, 
+                        50, best_direction_index, (0, 255, 0))
 
     def _draw_simple_sectors(self, radius: int):
         """Vẽ các sector đơn giản (chỉ chia theo góc)"""

@@ -67,4 +67,4 @@ if __name__ == "__main__":
     bot_manager = BotManager(game)
     
     bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY)
-    game.run(bot_manager, mode="train", render=False, draw_extra=bot_manager.draw_bot_vision)
+    game.run(bot_manager, mode="perform", render=True)
