@@ -1,14 +1,12 @@
 import matplotlib.pyplot as plt
 import pygame, os
 
-plt.ion()  # Bật chế độ tương tác
-
 def plot_training_progress(
     scores,
     mean_scores=None,
     title='Training...',
     window_size= 100,
-    headless=False,
+    show_graph=False,
     save_dir=""
 ):
     """
@@ -37,8 +35,13 @@ def plot_training_progress(
         computing the average at each valid position (i.e., where the full window fits).
         """
         return np.convolve(data, np.ones(window)/window, mode='valid')
+    
+    if show_graph:
+        plt.ion()   # Ensure interactive mode is on if not headless
+    else:
+        plt.ioff()  # Turn off interactive mode
 
-    plt.clf()
+    plt.cla() # Clear axes
     plt.plot(scores, label='Score')
     # plt.ylim(ymin=0)
     plt.text(len(scores) - 1, scores[-1], str(scores[-1]))
@@ -57,7 +60,7 @@ def plot_training_progress(
     if save_dir is not None:
         os.makedirs(os.path.dirname(save_dir), exist_ok=True) # Create folder
         plt.savefig(save_dir)
-    if not headless:
+    if show_graph:
         plt.pause(0.05)
 
 

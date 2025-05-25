@@ -93,7 +93,7 @@ class VisionNumpyAgent(BaseAgent):
             target[np.argmax(action)] = reward
         return target
     
-    def train(self, render: bool = True):
+    def train(self, render: bool = True, show_graph: bool = True):
         self.set_mode("train")
         rewards_per_episode = []
         scores_per_episode = []
@@ -160,7 +160,7 @@ class VisionNumpyAgent(BaseAgent):
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                plot_training_progress(scores_per_episode, title='Vision_numpy Training', save_dir=GRAPH_PATH)
+                plot_training_progress(scores_per_episode, title='Vision_numpy Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY

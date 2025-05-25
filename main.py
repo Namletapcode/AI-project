@@ -6,13 +6,21 @@ from options_menu import Options_Menu
 import pygame
 from bot.bot_manager import BotManager
 import threading
+import os
 from configs.dynamic_config import launch_configs_window
+import matplotlib.pyplot as plt
+
+bot_type = DodgeAlgorithm.DL_PARAM_INPUT_NUMPY
+game_render = True
+bot_mode = "train"
+show_graph = True
 
 HEADLESS_MODE = False # For google colab
 if HEADLESS_MODE:
-    import os
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    
+    game_render = False
+    show_graph = False
+
 if __name__ == "__main__":
     # pygame.init()
     # screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -63,8 +71,19 @@ if __name__ == "__main__":
     
     # gui_thread = threading.Thread(target = launch_configs_window, daemon = True) #Khởi tạo GUI
     # gui_thread.start()
+    
+    # Init plot before game for resolving resize window problem
+    if show_graph:
+        plt.ion()
+        os.environ['SDL_VIDEO_WINDOW_POS'] = '100,100' # Move pygame window
+    else:
+        plt.ioff()
+    plt.figure()
+    manager = plt.get_current_fig_manager()
+    manager.window.move(600, 100) # Move plot window
+    
     game = Game()
     bot_manager = BotManager(game)
     
-    bot_manager.create_bot(DodgeAlgorithm.DL_PARAM_INPUT_NUMPY)
-    game.run(bot_manager, mode="perform", render=True)
+    bot_manager.create_bot(bot_type)
+    game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)

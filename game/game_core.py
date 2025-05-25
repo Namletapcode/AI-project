@@ -13,7 +13,8 @@ from game.player import Player
 
 class Game:
     def __init__(self):
-        pygame.init()
+        pygame.display.init()
+        pygame.font.init()
         self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Touhou")
         self.clock = pygame.time.Clock() 
@@ -24,7 +25,7 @@ class Game:
         self.restart_game()
         self.font=pygame.font.Font(None, 36)
     
-    def run(self, bot_manager, mode: str = "perform", render: bool = True):
+    def run(self, bot_manager, mode: str = "perform", render: bool = True, show_graph: bool = False):
         update_timer = 0
         update_interval = 1.0 / UPS
         first_frame = True
@@ -53,7 +54,7 @@ class Game:
                 if render:
                     self.draw(bot_manager.draw_bot_vision, current_state)
         else:
-            bot_manager.current_bot.train(render)
+            bot_manager.current_bot.train(render, show_graph)
             
     def take_action(self, action: np.ndarray, render: bool = True): # for AI agent
         self.update(action)

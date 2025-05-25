@@ -52,7 +52,7 @@ class ParamTorchAgent(BaseAgent):
         self.heuristic_bot = HeuristicDodgeBot(game, HEURISTIC_METHOD)
         self.imitation_prob = IMITATION_PROBABILITY
         
-    def train(self, render: bool = False) -> None:
+    def train(self, render: bool = False, show_graph: bool = True) -> None:
         self.set_mode("train")
         rewards_per_episode = []
         scores_per_episode = []
@@ -139,7 +139,7 @@ class ParamTorchAgent(BaseAgent):
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                plot_training_progress(scores_per_episode, title='Param_pytorch Training', save_dir=GRAPH_PATH)
+                plot_training_progress(scores_per_episode, title='Param_pytorch Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             self.epsilon = max(MIN_EPSILON, self.epsilon * EPSILON_DECAY)
     
