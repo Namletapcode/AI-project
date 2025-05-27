@@ -127,7 +127,9 @@ class ParamTorchAgent(BaseAgent):
                 with open(LOG_PATH, 'a') as log_file:
                     log_file.write(log_message + '\n')
                 best_score = episode_score
-                self.policy_net.save()
+                self.policy_net.save(episode, True)
+            elif episode % 300 == 0:
+                self.policy_net.save(episode, False)
                 
             # train long memory
             self.train_long_memory()

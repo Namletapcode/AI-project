@@ -129,9 +129,13 @@ class Model:
         self.target_weight_2= self.main_weight_2.copy()
         self.target_bias_2  = self.main_bias_2.copy()
         
-    
-    def save(self) -> None:
-        np.savez(self.model_path,
+    def save(self, epoch: int, is_highscore: bool = False) -> None:
+        base, ext = os.path.splitext(self.model_path)
+        if is_highscore:
+            save_path = f"{base}_highscore_epoch{epoch}{ext}"
+        else:
+            save_path = f"{base}_epoch{epoch}{ext}"
+        np.savez(save_path,
                  main_weight_1=self.main_weight_1,
                  main_bias_1=self.main_bias_1,
                  main_weight_2=self.main_weight_2,

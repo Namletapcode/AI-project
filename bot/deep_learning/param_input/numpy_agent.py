@@ -63,7 +63,7 @@ class ParamNumpyAgent(BaseAgent):
         return action
 
     def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
-        target = self.convert(current_state, action, reward, next_state, game_over)
+        target = self.model.compute_target(current_state, action, reward, next_state, game_over)
         self.model.train(current_state, target)
 
     def train_long_memory(self):
@@ -77,18 +77,6 @@ class ParamNumpyAgent(BaseAgent):
             self.train_short_memory(current_state, action, reward, next_state, game_over)
         if USE_SOFT_UPDATE:
             self.model.soft_update()
-
-    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool) -> np.ndarray:
-        # use simplified Bellman equation to calculate expected output
-        if not game_over:
-            target = self.model.forward(current_state)[2]
-            Q_new = reward + DISCOUNT_FACTOR * np.max(self.model.target_forward(next_state))
-            Q_new = np.clip(Q_new, -10000, 10000)
-            target[np.argmax(action)] = Q_new
-        else:
-            target = self.model.forward(current_state)[2]
-            target[np.argmax(action)] = reward
-        return target
     
     def train(self, render: bool = False, show_graph: bool = True):
         self.set_mode("train")
@@ -146,8 +134,9 @@ class ParamNumpyAgent(BaseAgent):
                 with open(LOG_PATH, 'a') as log_file:
                     log_file.write(log_message + '\n')
                 best_score = episode_score
-                self.model.save()
-            
+                self.model.save(episode, True)
+            elif episode % 300 == 0:
+                self.model.save(episode, False)
             self.train_long_memory()
             
             if not USE_SOFT_UPDATE and step_count >= self.network_update_freq:

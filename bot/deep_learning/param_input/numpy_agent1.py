@@ -15,7 +15,7 @@ from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
 from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100000
-MAX_SAMPLE_SIZE = 10000
+MIN_MEMORY = 1000 # at least 1000 samples in memory before training
 BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 DISCOUNT_FACTOR = 0.99
@@ -105,7 +105,7 @@ class ParamNumpyAgent(BaseAgent):
                 current_state = next_state
                 
                 # 5) Mini‐batch training định kỳ
-                if step_count % TRAIN_INTERVAL == 0 and len(self.memory) >= BATCH_SIZE:
+                if step_count % TRAIN_INTERVAL == 0 and len(self.memory) >= MIN_MEMORY:
                     mini_batch = random.sample(self.memory, BATCH_SIZE)
                     states = np.zeros((BATCH_SIZE, 28), dtype=np.float64)
                     targets = np.zeros((BATCH_SIZE, 9), dtype=np.float64)
@@ -132,7 +132,9 @@ class ParamNumpyAgent(BaseAgent):
                 with open(LOG_PATH, 'a') as log_file:
                     log_file.write(log_message + '\n')
                 best_score = episode_score
-                self.model.save()
+                self.model.save(episode, True)
+            elif episode % 300 == 0:
+                self.model.save(episode, False)
             
             if not USE_SOFT_UPDATE and step_count >= self.network_update_freq:
                 # update target network
