@@ -26,8 +26,13 @@ class Linear_QNet(nn.Module):
         x = self.linear2(x)
         return x
     
-    def save(self) -> None:
-        torch.save(self.state_dict(), self.model_path)
+    def save(self, epoch: int, is_highscore: bool = False) -> None:
+        base, ext = os.path.splitext(self.model_path)
+        if is_highscore:
+            save_path = f"{base}_highscore_epoch{epoch}{ext}"
+        else:
+            save_path = f"{base}_epoch{epoch}{ext}"
+        torch.save(self.state_dict(), save_path)
     
     def load(self) -> None:
         self.load_state_dict(torch.load(self.model_path))
