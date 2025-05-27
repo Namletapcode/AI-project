@@ -73,14 +73,15 @@ if __name__ == "__main__":
     # gui_thread.start()
     
     # Init plot before game for resolving resize window problem
-    if show_graph:
-        plt.ion()
-        os.environ['SDL_VIDEO_WINDOW_POS'] = '100,100' # Move pygame window
-    else:
-        plt.ioff()
-    plt.figure()
-    manager = plt.get_current_fig_manager()
-    manager.window.move(600, 100) # Move plot window
+    if not HEADLESS_MODE:
+        if show_graph:
+            plt.ion()
+            os.environ['SDL_VIDEO_WINDOW_POS'] = '200,280' # Move pygame window
+        else:
+            plt.ioff()
+        plt.figure()
+        manager = plt.get_current_fig_manager()
+        manager.window.move(690, 200) # Move plot window
     
     game = Game()
     bot_manager = BotManager(game)

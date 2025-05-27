@@ -3,9 +3,10 @@ import os
 
 class Model:
 
-    def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.001, model_path: str=None, load_saved_model: bool = True):
+    def __init__(self, input_layer: int = 28, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.001, discount_factor: float = 0.99, model_path: str=None, load_saved_model: bool = True):
 
         self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
         self.model_path = model_path
         
         folder_path = os.path.dirname(self.model_path)
@@ -34,6 +35,20 @@ class Model:
         act_hidden_output   = self.__ReLU(raw_hidden_output)
         raw_output          = self.main_weight_2.dot(act_hidden_output) + self.main_bias_2
         return raw_hidden_output, act_hidden_output, raw_output
+    
+    def predict(self, input: np.ndarray) -> np.ndarray:
+        return self.forward(input)[2]
+    
+    def compute_target(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool) -> np.ndarray:
+        # use simplified Bellman equation to calculate expected output
+        target = self.predict(current_state)
+        if not game_over:
+            Q_new = reward + self.discount_factor * np.max(self.target_forward(next_state))
+            Q_new = np.clip(Q_new, -10000, 10000)
+            target[np.argmax(action)] = Q_new
+        else:
+            target[np.argmax(action)] = reward
+        return target
     
     def target_forward(self, input: np.ndarray) -> np.ndarray:
         # calculate values after every layer
@@ -68,6 +83,37 @@ class Model:
         raw_hidden_output, act_hidden_output, raw_output = self.forward(input)
         self.__backpropagation(raw_hidden_output, act_hidden_output, raw_output, input, expected_output)
     
+    def train_batch(self, states: np.ndarray, targets: np.ndarray) -> None:
+        """
+        states:  shape (batch_size,  input_size)
+        targets: shape (batch_size,  output_size)
+        Cập nhật weights/biases bằng backprop trên cả batch.
+        """
+        m = states.shape[0]
+        X = states.T   # (input_size,  batch_size)
+        Y = targets.T  # (output_size, batch_size)
+
+        # --- Forward ---
+        Z1 = self.main_weight_1 @ X + self.main_bias_1  # (hidden, batch)
+        A1 = self.__ReLU(Z1)                            # (hidden, batch)
+        Z2 = self.main_weight_2 @ A1 + self.main_bias_2 # (output, batch)
+
+        # --- Backward (MSE loss: L = 1/2m * sum((Z2 - Y)^2)) ---
+        dZ2 = (Z2 - Y)                       # (output, batch)
+        dW2 = (1 / m) * dZ2 @ A1.T           # (output, hidden)
+        db2 = (1 / m) * np.sum(dZ2, axis=1, keepdims=True)  # (output, 1)
+
+        dA1 = self.main_weight_2.T @ dZ2                    # (hidden, batch)
+        dZ1 = dA1 * self.__derivative_ReLU(Z1)              # (hidden, batch)
+        dW1 = (1 / m) * dZ1 @ X.T                           # (hidden, input)
+        db1 = (1 / m) * np.sum(dZ1, axis=1, keepdims=True)  # (hidden, 1)
+
+        # --- Gradient descent update ---
+        self.main_weight_2 -= self.learning_rate * dW2
+        self.main_bias_2 -= self.learning_rate * db2
+        self.main_weight_1 -= self.learning_rate * dW1
+        self.main_bias_1 -= self.learning_rate * db1
+        
     def set_model_path(self, model_path: str) -> None:
         self.model_path = model_path
         

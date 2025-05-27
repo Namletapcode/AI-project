@@ -16,12 +16,14 @@ from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100000
 MAX_SAMPLE_SIZE = 10000
+BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1
 EPSILON_DECAY = 0.995
 MIN_EPSILON = 0.01
 NETWORK_UPDATE_FREQ = 250
+TRAIN_INTERVAL = 4
 
 USE_SOFT_UPDATE = False
 TAU = 0.005
@@ -56,39 +58,11 @@ class ParamNumpyAgent(BaseAgent):
                 action[random.randint(0, 8)] = 1
             else:
                 # if not model will predict the action
-                action[np.argmax(self.model.forward(state)[2])] = 1
+                action[np.argmax(self.model.predict(state))] = 1
         elif self.mode == "perform":
             # always use model to predict action in pridict action / always predict
-            action[np.argmax(self.model.forward(state)[2])] = 1
+            action[np.argmax(self.model.predict(state))] = 1
         return action
-
-    def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
-        target = self.convert(current_state, action, reward, next_state, game_over)
-        self.model.train(current_state, target)
-
-    def train_long_memory(self):
-        if len(self.memory) <= MAX_SAMPLE_SIZE:
-            # if have not saved over 1000 states yet
-            mini_sample = self.memory
-        else:
-            # else pick random 1000 states to re-train
-            mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
-        for current_state, action, reward, next_state, game_over in mini_sample:
-            self.train_short_memory(current_state, action, reward, next_state, game_over)
-        if USE_SOFT_UPDATE:
-            self.model.soft_update()
-
-    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool) -> np.ndarray:
-        # use simplified Bellman equation to calculate expected output
-        if not game_over:
-            target = self.model.forward(current_state)[2]
-            Q_new = reward + DISCOUNT_FACTOR * np.max(self.model.target_forward(next_state))
-            Q_new = np.clip(Q_new, -10000, 10000)
-            target[np.argmax(action)] = Q_new
-        else:
-            target = self.model.forward(current_state)[2]
-            target[np.argmax(action)] = reward
-        return target
     
     def train(self, render: bool = False, show_graph: bool = True):
         self.set_mode("train")
@@ -124,16 +98,28 @@ class ParamNumpyAgent(BaseAgent):
                 episode_reward += reward
                 episode_score = self.get_score()
 
-                # train short memory with the action performed
-                self.train_short_memory(current_state, action, reward, next_state, game_over)
-
                 # remember the action and the reward
                 self.remember(current_state, action, reward, next_state, game_over)
                 
                 step_count += 1
                 current_state = next_state
+                
+                # 5) Mini‐batch training định kỳ
+                if step_count % TRAIN_INTERVAL == 0 and len(self.memory) >= BATCH_SIZE:
+                    mini_batch = random.sample(self.memory, BATCH_SIZE)
+                    states = np.zeros((BATCH_SIZE, 28), dtype=np.float64)
+                    targets = np.zeros((BATCH_SIZE, 9), dtype=np.float64)
+                    for i, (current_state, action, reward, next_state, game_over) in enumerate(mini_batch):
+                        target_q = self.model.compute_target(current_state, action, reward, next_state, game_over)
+                        states[i] = current_state.flatten()
+                        targets[i] = target_q.flatten()
+                    # Chuyển thành numpy array và train batch
+                    self.model.train_batch(
+                        states,    # shape (batch_size, 28)
+                        targets    # shape (batch_size, 9)
+                    )
 
-            # if game over then train long memory and start again
+            # End of episode
             rewards_per_episode.append(episode_reward)
             scores_per_episode.append(episode_score)
             
@@ -147,8 +133,6 @@ class ParamNumpyAgent(BaseAgent):
                     log_file.write(log_message + '\n')
                 best_score = episode_score
                 self.model.save()
-            
-            self.train_long_memory()
             
             if not USE_SOFT_UPDATE and step_count >= self.network_update_freq:
                 # update target network

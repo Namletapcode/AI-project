@@ -47,8 +47,8 @@ class Player(pygame.sprite.Sprite):
     def draw_surround_circle(self, radius: float):
         pygame.draw.circle(self.surface, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
         
-    def update(self, action: np.ndarray):
-        self.move(action)
+    def update(self, action_idx: int):
+        self.move(action_idx)
     
     def reset(self):
         self.x = SCREEN_WIDTH // 2
@@ -58,8 +58,8 @@ class Player(pygame.sprite.Sprite):
         if DISPLAY_PLAYER_TRAIL:
             self.trail.clear()
         
-    def set_movement_from_index(self, action: int):
-        self.direction = self.directions[action]
+    def set_movement_from_index(self, action_idx: int):
+        self.direction = self.directions[action_idx]
     
     def input(self):
         keys = pygame.key.get_pressed()
@@ -86,12 +86,12 @@ class Player(pygame.sprite.Sprite):
 
         return pygame.Vector2(x, y)
         
-    def move(self, action: np.ndarray = None):
-        if action is None:
+    def move(self, action_idx: int = None):
+        if action_idx is None:
             # user keyboard input
             self.input()
         else:
-            self.set_movement_from_index(np.argmax(action))
+            self.set_movement_from_index(action_idx)
             
         if self.direction.x or self.direction.y:
             self.is_moving = True

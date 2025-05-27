@@ -45,7 +45,7 @@ class Game:
                 while update_timer >= update_interval or first_frame:
                     current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
                     action = bot_manager.current_bot.get_action(current_state)
-                    self.update(action)
+                    self.update(np.argmax(action))
                     if self.score in [250, 251, 252, 253]:
                         with open("log.txt", "a") as f:
                             f.write(f"Time: {self.update_counter},\nPlayer: ({self.player.x}, {self.player.y}),\nState: {[idx for idx, val in enumerate(current_state) if val == 1]},\nAction: {action}\n")
@@ -56,8 +56,8 @@ class Game:
         else:
             bot_manager.current_bot.train(render, show_graph)
             
-    def take_action(self, action: np.ndarray, render: bool = True): # for AI agent
-        self.update(action)
+    def take_action(self, action_idx: int, render: bool = True): # for AI agent
+        self.update(action_idx)
         if render:
             self.draw()
 
@@ -116,13 +116,13 @@ class Game:
         self.score = 0
         self.start_time = pygame.time.get_ticks()
 
-    def update(self, action: np.ndarray = None):
+    def update(self, action_idx: int = None):
         self.update_counter += 1
 
         # update logic
         self.check_events()
         if not self.game_over:
-            self.player.update(action)
+            self.player.update(action_idx)
             self.reward = 0.5 if not self.player.is_moving else 0.0 # reset every loop, only set to zero if move, -10 if got hit
             if self.bullet_manager.key == 0:
                 self.bullet_manager.update(update_num=self.update_counter)
