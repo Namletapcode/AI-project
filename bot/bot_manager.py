@@ -1,10 +1,11 @@
 import numpy as np
 from configs.bot_config import (
     DodgeAlgorithm, DODGE_ALGORITHM,
-    SCAN_RADIUS, USE_COMPLEX_SCANNING, BOT_ACTION, BOT_DRAW)
+    SCAN_RADIUS, USE_COMPLEX_SCANNING, BOT_ACTION)
 from utils.draw_utils import draw_sector, draw_complex_sector
 from bot.heuristic_dodge import HeuristicDodgeBot
-from bot.deep_learning.param_input.numpy_agent import ParamNumpyAgent
+from bot.deep_learning.param_input.numpy_batch_interval_agent import ParamNumpyBatchIntervalNumpyAgent
+from bot.deep_learning.param_input.numpy_long_short_agent import ParamNumpyLongShortAgent
 from bot.deep_learning.param_input.pytorch_agent import ParamTorchAgent
 from bot.deep_learning.vision_input.numpy_agent import VisionNumpyAgent
 
@@ -31,8 +32,11 @@ class BotManager:
             self.is_heuristic = False
             self.is_vision = False
             self.is_numpy = False
-            if algorithm == DodgeAlgorithm.DL_PARAM_INPUT_NUMPY:
-                self.current_bot = ParamNumpyAgent(self.game, load_saved_model)
+            if algorithm == DodgeAlgorithm.DL_PARAM_BATCH_INTERVAL_INPUT_NUMPY:
+                self.current_bot = ParamNumpyBatchIntervalNumpyAgent(self.game, load_saved_model)
+                self.is_numpy = True
+            elif algorithm == DodgeAlgorithm.DL_PARAM_LONG_SHORT_INPUT_NUMPY:
+                self.current_bot = ParamNumpyLongShortAgent(self.game, load_saved_model)
                 self.is_numpy = True
             elif algorithm == DodgeAlgorithm.DL_PARAM_INPUT_TORCH:
                 self.current_bot = ParamTorchAgent(self.game, load_saved_model)
@@ -50,7 +54,7 @@ class BotManager:
     
     def draw_bot_vision(self, state):
         """Vẽ vision của bot và hướng di chuyển"""
-        if not self.current_bot or not BOT_DRAW:
+        if not self.current_bot:
             return
             
         player = self.game.player

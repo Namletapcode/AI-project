@@ -9,13 +9,15 @@ class DodgeAlgorithm(Enum):
     OPPOSITE_THREAT_DIRECTION = 4
     
     # Deep learning algorithms
-    DL_PARAM_INPUT_NUMPY = 5
-    DL_PARAM_INPUT_TORCH = 6
-    DL_VISION_INPUT_NUMPY = 7
-    DL_VISION_INPUT_TORCH = 8 
+    DL_PARAM_BATCH_INTERVAL_INPUT_NUMPY = 5
+    DL_PARAM_LONG_SHORT_INPUT_NUMPY = 6
+    DL_PARAM_INPUT_CUPY = 7
+    DL_PARAM_INPUT_TORCH = 8
+    DL_VISION_INPUT_NUMPY = 9
+    DL_VISION_INPUT_TORCH = 10
 
 BOT_ACTION = True               # True if bot is allowed to take action : set by dev
-BOT_DRAW = False                # True if bot is allowed to draw : set by dev
+bot_draw = False                # True if bot is allowed to draw : set by dev
 FILTER_MOVE_INTO_WALL = True
 WALL_CLOSE_RANGE = 30
 
@@ -28,5 +30,5 @@ USE_COMPLEX_SCANNING = True
 SCAN_RADIUS = 100
 DODGE_ALGORITHM = DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED
 
-IMG_SIZE = 50
+IMG_SIZE = 80
 DATE_FORMAT = "%d-%m %H:%M:%S"

@@ -6,6 +6,7 @@ from configs.game_config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, UPS,
     dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
 )
+from configs import bot_config
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS, IMG_SIZE
 from utils.bot_helper import get_screen_shot_blue_channel, show_numpy_to_image
 from game.bullet_manager import BulletManager
@@ -139,7 +140,7 @@ class Game:
         self.surface.fill((0, 0, 0))
         self.draw_box()
         
-        if draw_extra:
+        if draw_extra and bot_config.bot_draw:
             draw_extra(current_state)
             
         self.player.draw()

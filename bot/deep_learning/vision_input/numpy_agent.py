@@ -14,15 +14,16 @@ from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
 from utils.bot_helper import plot_training_progress, show_numpy_to_image
 
 MAX_MEMORY = 10000
-MAX_SAMPLE_SIZE = 1000
+MIN_MEMORY = 1000 # at least 1000 samples in memory before training
+BATCH_SIZE = 64
 LEARNING_RATE = 0.0001
-GAMMA = 0.9
+DISCOUNT_FACTOR = 0.99
 EPSILON = 1
 EPSILON_DECAY = 0.999
 MIN_EPSILON = 0.01
 NETWORK_UPDATE_FREQ = 1000
 
-IMG_SIZE = 50 # 50 x 50 pixel^2
+IMG_SIZE = 80 # 80 x 80 pixel^2
 
 USE_SOFT_UPDATE = False
 TAU = 0.005
@@ -35,7 +36,7 @@ class VisionNumpyAgent(BaseAgent):
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.epsilon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, MODEL_PATH, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, DISCOUNT_FACTOR, MODEL_PATH, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
         
         self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 250 steps
         
@@ -68,30 +69,26 @@ class VisionNumpyAgent(BaseAgent):
         self.reset_self_img()
 
     def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
-        target = self.convert(current_state, action, reward, next_state, game_over)
+        target = self.model.compute_target(current_state, action, reward, next_state, game_over)
         self.model.train(current_state, target)
 
     def train_long_memory(self):
-        if len(self.memory) <= MAX_SAMPLE_SIZE:
-            # if have not saved over 1000 states yet
-            mini_sample = self.memory
-        else:
-            # else pick random 1000 states to re-train
-            mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
-        for current_state, action, reward, next_state, game_over in mini_sample:
-            self.train_short_memory(current_state, action, reward, next_state, game_over)
-
-    def convert(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool) -> np.ndarray:
-        # use simplified Bellman equation to calculate expected output
-        if not game_over:
-            target = self.model.forward(current_state)[2]
-            Q_new = reward + GAMMA * np.max(self.model.target_forward(next_state))
-            Q_new = np.clip(Q_new, -10000, 10000)
-            target[np.argmax(action)] = Q_new
-        else:
-            target = self.model.forward(current_state)[2]
-            target[np.argmax(action)] = reward
-        return target
+        if len(self.memory) <= MIN_MEMORY:
+            return
+        mini_batch = random.sample(self.memory, BATCH_SIZE)
+        states = np.zeros((BATCH_SIZE, 2*IMG_SIZE**2), dtype=np.float64)
+        targets = np.zeros((BATCH_SIZE, 9), dtype=np.float64)
+        for i, (current_state, action, reward, next_state, game_over) in enumerate(mini_batch):
+            target_q = self.model.compute_target(current_state, action, reward, next_state, game_over)
+            states[i] = current_state.flatten()
+            targets[i] = target_q.flatten()
+        # Chuyển thành numpy array và train batch
+        self.model.train_batch(
+            states,    # shape (batch_size, 28)
+            targets    # shape (batch_size, 9)
+        )
+        if USE_SOFT_UPDATE:
+            self.model.soft_update()
     
     def train(self, render: bool = True, show_graph: bool = True):
         self.set_mode("train")
@@ -116,7 +113,7 @@ class VisionNumpyAgent(BaseAgent):
                 action = self.get_action(current_state)
 
                 # perform action in game
-                self.perform_action(action, render)
+                self.perform_action(np.argmax(action), render)
 
                 # get the new state after performed action
                 next_state = self.get_state()
@@ -149,7 +146,10 @@ class VisionNumpyAgent(BaseAgent):
                 with open(LOG_PATH, 'a') as log_file:
                     log_file.write(log_message + '\n')
                 best_score = episode_score
-                self.model.save()
+                self.model.save(episode, True)
+            elif episode % 300 == 0:
+                self.model.save(episode, False)
+            self.train_long_memory()
             
             self.train_long_memory()
             
@@ -177,7 +177,7 @@ class VisionNumpyAgent(BaseAgent):
             action = self.get_action(state)
 
             # perform selected move
-            self.perform_action(action, render)
+            self.perform_action(np.argmax(action), render)
 
             # check if game over or not
             _, game_over = self.get_reward()

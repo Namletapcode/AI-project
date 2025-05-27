@@ -15,7 +15,8 @@ from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
 from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100000
-MAX_SAMPLE_SIZE = 10000
+MIN_MEMORY = 1000 # at least 1000 samples in memory before training
+BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1
@@ -26,11 +27,11 @@ NETWORK_UPDATE_FREQ = 250
 USE_SOFT_UPDATE = False
 TAU = 0.005
 
-MODEL_PATH = 'saved_files/param_numpy/param_numpy_model.npz'
-GRAPH_PATH = 'saved_files/param_numpy/param_numpy_training.png'
-LOG_PATH = 'saved_files/param_numpy/param_numpy_log.log'
+MODEL_PATH = 'saved_files/param_numpy_long_short/param_numpy_long_short_model.npz'
+GRAPH_PATH = 'saved_files/param_numpy_long_short/param_numpy_long_short_training.png'
+LOG_PATH = 'saved_files/param_numpy_long_short/param_numpy_long_short_log.log'
 
-class ParamNumpyAgent(BaseAgent):
+class ParamNumpyLongShortAgent(BaseAgent):
 
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
@@ -67,14 +68,20 @@ class ParamNumpyAgent(BaseAgent):
         self.model.train(current_state, target)
 
     def train_long_memory(self):
-        if len(self.memory) <= MAX_SAMPLE_SIZE:
-            # if have not saved over 1000 states yet
-            mini_sample = self.memory
-        else:
-            # else pick random 1000 states to re-train
-            mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
-        for current_state, action, reward, next_state, game_over in mini_sample:
-            self.train_short_memory(current_state, action, reward, next_state, game_over)
+        if len(self.memory) <= MIN_MEMORY:
+            return
+        mini_batch = random.sample(self.memory, BATCH_SIZE)
+        states = np.zeros((BATCH_SIZE, 28), dtype=np.float64)
+        targets = np.zeros((BATCH_SIZE, 9), dtype=np.float64)
+        for i, (current_state, action, reward, next_state, game_over) in enumerate(mini_batch):
+            target_q = self.model.compute_target(current_state, action, reward, next_state, game_over)
+            states[i] = current_state.flatten()
+            targets[i] = target_q.flatten()
+        # Chuyển thành numpy array và train batch
+        self.model.train_batch(
+            states,    # shape (batch_size, 28)
+            targets    # shape (batch_size, 9)
+        )
         if USE_SOFT_UPDATE:
             self.model.soft_update()
     
@@ -181,7 +188,7 @@ class ParamNumpyAgent(BaseAgent):
         self.model.load()
 
 if __name__ == '__main__':
-    agent = ParamNumpyAgent(Game())
+    agent = ParamNumpyLongShortAgent(Game())
 
     mode = "train"
 

@@ -1,16 +1,12 @@
-from game.game_core import Game
-from configs.game_config import SCREEN_HEIGHT,SCREEN_WIDTH
-from configs.bot_config import DodgeAlgorithm
-from menu import Menu
-from options_menu import Options_Menu
-import pygame
-from bot.bot_manager import BotManager
-import threading
-import os
-from configs.dynamic_config import launch_configs_window
+import os, sys, pygame
 import matplotlib.pyplot as plt
+from game.game_core import Game
+from configs.bot_config import DodgeAlgorithm
+from bot.bot_manager import BotManager
+from PySide6.QtWidgets import QApplication
+from utils.interface import SettingsWindow
 
-bot_type = DodgeAlgorithm.DL_PARAM_INPUT_NUMPY
+bot_type = DodgeAlgorithm.DL_VISION_INPUT_NUMPY
 game_render = True
 bot_mode = "train"
 show_graph = True
@@ -20,59 +16,17 @@ if HEADLESS_MODE:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     game_render = False
     show_graph = False
+if bot_mode == "perform":
+    show_graph = False
 
-if __name__ == "__main__":
-    # pygame.init()
-    # screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    # font = pygame.font.Font(None, 36)
+def run_settings():
+    app = QApplication(sys.argv)
+    window = SettingsWindow()
+    window.move(1100, 200)
+    window.show()
+    app.exec()
 
-    # Khởi tạo menu
-    # menu = Menu(screen)
-    # options_menu = Options_Menu(screen, font)
-    # in_menu = False
-    # in_options = False
-    # control_mode = "AI"  # Mặc định
-    # bullet_speed = 5  # Mặc định
-
-    # Vòng lặp menu
-    # while in_menu:
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             pygame.quit()
-    #             exit()
-
-    #         if in_options:
-    #             # Xử lý menu tùy chọn
-    #             result = options_menu.handle_input(event)
-    #             if result == "Back":
-    #                 in_options = False
-    #                 menu.selected_index == 0
-    #                 result = menu.handle_input(event)
-    #             # Cập nhật các giá trị từ OptionsMenu
-    #             control_mode = options_menu.control_mode
-    #             bullet_speed = options_menu.bullet_speed
-
-    #         else:
-    #             # Xử lý menu chính
-    #             result = menu.handle_input(event)
-    #             if result == "Playing":
-    #                 in_menu = False  # Bắt đầu game
-    #             elif result == "Options":
-    #                 in_options = True
-    #             elif result == "Quit":
-    #                 pygame.quit()
-    #                 exit()
-
-    #     # Vẽ menu
-    #     if in_options:
-    #         options_menu.draw()
-    #     else:
-    #         menu.draw()
-    
-    # gui_thread = threading.Thread(target = launch_configs_window, daemon = True) #Khởi tạo GUI
-    # gui_thread.start()
-    
-    # Init plot before game for resolving resize window problem
+def run_game():
     if not HEADLESS_MODE:
         if show_graph:
             plt.ion()
@@ -88,3 +42,17 @@ if __name__ == "__main__":
     
     bot_manager.create_bot(bot_type)
     game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)
+    
+if __name__ == "__main__":
+    if bot_mode == "perform":
+        import multiprocessing as mp
+        mp.set_start_method('spawn', force=True)  # Use spawn method for multiprocessing
+        
+        settings_process = mp.Process(target=run_settings)
+        settings_process.start()
+        # Run game in main thread
+        run_game()
+        
+        settings_process.join()  # Wait for settings window to close before exiting
+    else:
+        run_game()

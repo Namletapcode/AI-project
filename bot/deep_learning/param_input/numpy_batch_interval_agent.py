@@ -11,7 +11,7 @@ if __name__ == "__main__":
 from bot.deep_learning.models.numpy_model import Model
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
-from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
+from configs.bot_config import DATE_FORMAT
 from utils.bot_helper import plot_training_progress
 
 MAX_MEMORY = 100000
@@ -23,16 +23,16 @@ EPSILON = 1
 EPSILON_DECAY = 0.995
 MIN_EPSILON = 0.01
 NETWORK_UPDATE_FREQ = 250
-TRAIN_INTERVAL = 4
+TRAIN_INTERVAL = 10
 
 USE_SOFT_UPDATE = False
 TAU = 0.005
 
-MODEL_PATH = 'saved_files/param_numpy/param_numpy_model.npz'
-GRAPH_PATH = 'saved_files/param_numpy/param_numpy_training.png'
-LOG_PATH = 'saved_files/param_numpy/param_numpy_log.log'
+MODEL_PATH = 'saved_files/param_numpy_batch_interval/param_numpy_batch_interval_model.npz'
+GRAPH_PATH = 'saved_files/param_numpy_batch_interval/param_numpy_batch_interval_training.png'
+LOG_PATH = 'saved_files/param_numpy_batch_interval/param_numpy_batch_interval_log.log'
 
-class ParamNumpyAgent(BaseAgent):
+class ParamNumpyBatchIntervalNumpyAgent(BaseAgent):
 
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
@@ -178,7 +178,7 @@ class ParamNumpyAgent(BaseAgent):
         self.model.load()
 
 if __name__ == '__main__':
-    agent = ParamNumpyAgent(Game())
+    agent = ParamNumpyBatchIntervalNumpyAgent(Game())
 
     mode = "train"
 
