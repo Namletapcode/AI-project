@@ -128,6 +128,31 @@ class BulletManager:
             else:
                 bullet.set_color(bullet.origin_color)
     
+    def color_in_square(self, side_length: float = None, color: tuple = None):
+        """
+        Colors bullets that are within a square boundary around the player.
+        
+        Args:
+            side_length (float): Length of the square's sides
+            color (tuple): RGB color tuple for bullets within square
+        """
+        if not side_length or not color:
+            return
+            
+        half_length = side_length / 2
+        
+        for bullet in self.bullets:
+            # Check if bullet is within square bounds
+            in_square = (
+                self.player.x - half_length <= bullet.x <= self.player.x + half_length and
+                self.player.y - half_length <= bullet.y <= self.player.y + half_length
+            )
+            
+            if in_square:
+                bullet.set_color(color)
+            else:
+                bullet.set_color(bullet.origin_color)
+    
     def get_bullet_in_range(self, end_radius: int, start_radius: int = 0) -> list[Bullet]:
         """
         Retrieves a list of bullets that are within a specified distance range from the player.

@@ -6,14 +6,14 @@ from configs.game_config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, UPS,
     dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
 )
-from configs import bot_config
 from configs.bot_config import USE_COMPLEX_SCANNING, SCAN_RADIUS, IMG_SIZE
 from utils.bot_helper import get_screen_shot_blue_channel, show_numpy_to_image
 from game.bullet_manager import BulletManager
 from game.player import Player
 
 class Game:
-    def __init__(self):
+    def __init__(self, share_state=None):
+        self.share_state = share_state
         pygame.display.init()
         pygame.font.init()
         self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -140,12 +140,15 @@ class Game:
         self.surface.fill((0, 0, 0))
         self.draw_box()
         
-        if draw_extra and bot_config.bot_draw:
-            draw_extra(current_state)
+        if self.share_state.bot_draw and draw_extra:
+            draw_extra(current_state, self.share_state)
             
         self.player.draw()
         self.bullet_manager.draw(self.surface)
-        # print(self.get_reward())
+        
+        if self.share_state.bot_draw and self.share_state.is_vision:
+            show_numpy_to_image(get_screen_shot_blue_channel(self.player.x, self.player.y, IMG_SIZE, self.surface), IMG_SIZE)
+            
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         # time_text =  self.font.render(f"Time: {self.survival_time}s", True, (255, 255, 255))
     

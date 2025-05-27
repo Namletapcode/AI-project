@@ -160,6 +160,9 @@ import cv2
 def show_numpy_to_image(img: np.ndarray, img_size: int):
     # Show what the AI see
     vision = (img * 255).astype(np.uint8).reshape((img_size, img_size))
+    vision = cv2.resize(vision, (img_size * 2, img_size * 2), interpolation=cv2.INTER_NEAREST)
+    cv2.namedWindow('AI Vision')
+    cv2.moveWindow('AI Vision', 1300, 650)
     cv2.imshow('AI Vision', vision)
     cv2.waitKey(1)
 

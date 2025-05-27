@@ -1,4 +1,5 @@
 from enum import Enum
+from multiprocessing import Manager
 
 class DodgeAlgorithm(Enum):
     # Heuristic algorithms
@@ -9,12 +10,38 @@ class DodgeAlgorithm(Enum):
     OPPOSITE_THREAT_DIRECTION = 4
     
     # Deep learning algorithms
-    DL_PARAM_BATCH_INTERVAL_INPUT_NUMPY = 5
-    DL_PARAM_LONG_SHORT_INPUT_NUMPY = 6
-    DL_PARAM_INPUT_CUPY = 7
-    DL_PARAM_INPUT_TORCH = 8
-    DL_VISION_INPUT_NUMPY = 9
-    DL_VISION_INPUT_TORCH = 10
+    DL_PARAM_BATCH_INTERVAL_NUMPY = 5
+    DL_PARAM_LONG_SHORT_NUMPY = 6
+    DL_PARAM_CUPY = 7
+    DL_PARAM_TORCH = 8
+    DL_VISION_NUMPY = 9
+    DL_VISION_BATCH_INTERVAL_CUPY = 10
+    DL_VISION_LONG_SHORT_CUPY = 11
+    DL_VISION_TORCH = 12
+    SUPERVISED = 13
+
+class SharedState:
+    def __init__(self):
+        manager = Manager()
+        self._shared_dict = manager.dict()
+        self._shared_dict['bot_draw'] = False
+        self._shared_dict['is_vision'] = False
+        
+    @property
+    def bot_draw(self):
+        return self._shared_dict['bot_draw']
+    
+    @property
+    def is_vision(self):
+        return self._shared_dict['is_vision']
+    
+    @bot_draw.setter
+    def bot_draw(self, value):
+        self._shared_dict['bot_draw'] = value
+    
+    @is_vision.setter
+    def is_vision(self, value):
+        self._shared_dict['is_vision'] = value
 
 BOT_ACTION = True               # True if bot is allowed to take action : set by dev
 bot_draw = False                # True if bot is allowed to draw : set by dev

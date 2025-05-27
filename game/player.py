@@ -46,6 +46,23 @@ class Player(pygame.sprite.Sprite):
 
     def draw_surround_circle(self, radius: float):
         pygame.draw.circle(self.surface, (255, 255, 255), (int(self.x), int(self.y)), radius, 1)
+    
+    def draw_surround_square(self, side_length: float):
+        """
+        Draw a square around the player with specified side length.
+        Args:
+            side_length (float): Length of the square's sides
+        """
+        # Calculate square corners with player at center
+        half_length = side_length / 2
+        left = self.x - half_length
+        top = self.y - half_length
+        
+        # Create rectangle for drawing
+        square_rect = pygame.Rect(left, top, side_length, side_length)
+        
+        # Draw square outline in white with 1px thickness
+        pygame.draw.rect(self.surface, (0, 255, 0), square_rect, 1)
         
     def update(self, action_idx: int):
         self.move(action_idx)
