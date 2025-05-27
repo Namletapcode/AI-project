@@ -149,16 +149,11 @@ def get_screen_shot_blue_channel(x: float, y: float, img_size: int, surface: pyg
     left = max(0, x - half)
     right = min(blue_channel.shape[1], x + half)
     
-    # Tạo ảnh kết quả có đúng shape (img_size, img_size)
-    cropped = np.zeros((img_size, img_size), dtype=np.float32)
+    # Crop từ surface
     crop_data = blue_channel[top:bottom, left:right]
     
-    # Dán phần lấy được vào giữa ảnh đầu ra
-    h, w = crop_data.shape
-    cropped[:h, :w] = crop_data
-    
     # Normalize và flatten về 1 chiều
-    return (cropped / 255.0).reshape(-1, 1)  # shape: (img_size*img_size, 1)
+    return (crop_data / 255.0).reshape(-1, 1)  # shape: (img_size*img_size, 1)
 
 import cv2
 

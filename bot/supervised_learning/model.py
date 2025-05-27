@@ -1,16 +1,16 @@
 import numpy as np
 import os
-
-model_file = 'saved_files/spv_numpy/spv_numpy_model.npz'
-
 class Model:
 
-    def __init__(self, input_layer: int = 12, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.01):
+    def __init__(self, input_layer: int = 28, hidden_layer: int = 256, output_layer: int = 9, learning_rate: float = 0.01, model_path: str = None, load_saved_model: bool = True):
 
         self.learning_rate = learning_rate
-        self.model_path = model_file
+        self.model_path = model_path
         
-        if os.path.exists(self.model_path):
+        folder_path = os.path.dirname(self.model_path)
+        os.makedirs(folder_path, exist_ok=True)
+        
+        if load_saved_model and os.path.exists(self.model_path):
             self.load()
         else:
             # generate random weight and bias with all element between -0.5 and 0.5
@@ -32,12 +32,12 @@ class Model:
     
     def __backpropagation(self, model_raw_hidden_output: np.ndarray, model_act_hidden_output: np.ndarray, model_raw_output: np.ndarray, input: np.ndarray, expected_output: np.ndarray) -> None:
         # calculate deltas
-        loss                = model_raw_output - expected_output
-        delta_weight_2      = 1 / loss.size * loss.dot(model_act_hidden_output.T)
-        delta_bias_2        = (1 / loss.size) * np.sum(loss, axis=1, keepdims=True)
-        delta_hidden        = self.weight_2.T.dot(loss) * self.__derivative_ReLU(model_raw_hidden_output)
-        delta_weight_1      = 1 / delta_hidden.size * delta_hidden.dot(input.T)
-        delta_bias_1        = (1 / delta_hidden.size) * np.sum(delta_hidden, axis=1, keepdims=True)
+        delta_output        = model_raw_output - expected_output
+        delta_weight_2      = delta_output.dot(model_act_hidden_output.T)
+        delta_bias_2        = np.sum(delta_output, axis=1, keepdims=True)
+        delta_hidden        = self.weight_2.T.dot(delta_output) * self.__derivative_ReLU(model_raw_hidden_output)
+        delta_weight_1      = delta_hidden.dot(input.T)
+        delta_bias_1        = np.sum(delta_hidden, axis=1, keepdims=True)
 
         # update weight and bias
         self.weight_1       = self.weight_1 - self.learning_rate * delta_weight_1
@@ -56,20 +56,76 @@ class Model:
         soft_max = exp_A / np.sum(exp_A, axis=0, keepdims=True)
         return soft_max
     
+    def calculate_loss(self, output: np.ndarray, expected_output: np.ndarray) -> float:
+        """
+        Calculate Cross Entropy Loss for softmax output
+        Args:
+            output: Model softmax output (9,1)
+            expected_output: One-hot encoded target (9,1)
+        Returns:
+            float: Cross entropy loss value
+        """
+        # Avoid log(0)
+        epsilon = 1e-15
+        output = np.clip(output, epsilon, 1 - epsilon)
+        return -np.sum(expected_output * np.log(output))
+
     def train(self, input: np.ndarray, expected_output: np.ndarray):
         # train a single data / train short memory
         raw_hidden_output, act_hidden_output, raw_output = self.forward(input)
         self.__backpropagation(raw_hidden_output, act_hidden_output, raw_output, input, expected_output)
+        return self.calculate_loss(raw_output, expected_output)
     
+    def train_batch(self, states: np.ndarray, targets: np.ndarray) -> None:
+        """
+        states:  shape (batch_size,  input_size)
+        targets: shape (batch_size,  output_size)
+        Cập nhật weights/biases bằng backprop trên cả batch.
+        """
+        m = states.shape[0]
+        X = states.T   # (input_size,  batch_size)
+        Y = targets.T  # (output_size, batch_size)
+
+        # --- Forward ---
+        Z1 = self.weight_1 @ X + self.bias_1  # (hidden, batch)
+        A1 = self.__ReLU(Z1)                  # (hidden, batch)
+        Z2 = self.weight_2 @ A1 + self.bias_2 # (output, batch)
+
+        # --- Calculate loss ---
+        epsilon = 1e-15
+        A2 = np.clip(Z2, epsilon, 1 - epsilon)  # Avoid log(0)
+        batch_loss = -np.sum(Y * np.log(A2)) / m  # Average cross-entropy loss
+
+        # --- Backward (MSE loss: L = 1/2m * sum((Z2 - Y)^2)) ---
+        dZ2 = (Z2 - Y)                       # (output, batch)
+        dW2 = (1 / m) * dZ2 @ A1.T           # (output, hidden)
+        db2 = (1 / m) * np.sum(dZ2, axis=1, keepdims=True)  # (output, 1)
+
+        dA1 = self.weight_2.T @ dZ2                    # (hidden, batch)
+        dZ1 = dA1 * self.__derivative_ReLU(Z1)              # (hidden, batch)
+        dW1 = (1 / m) * dZ1 @ X.T                           # (hidden, input)
+        db1 = (1 / m) * np.sum(dZ1, axis=1, keepdims=True)  # (hidden, 1)
+
+        # --- Gradient descent update ---
+        self.weight_2 -= self.learning_rate * dW2
+        self.bias_2 -= self.learning_rate * db2
+        self.weight_1 -= self.learning_rate * dW1
+        self.bias_1 -= self.learning_rate * db1
+        return batch_loss
     def set_model_path(self, model_path: str) -> None:
         self.model_path = model_path
     
-    def save(self) -> None:
-        np.savez(self.model_path,
-            weight_1=self.weight_1,
-            bias_1=self.bias_1,
-            weight_2=self.weight_2,
-            bias_2=self.bias_2)
+    def save(self, epoch: int, is_highscore: bool = False) -> None:
+        base, ext = os.path.splitext(self.model_path)
+        if is_highscore:
+            save_path = f"{base}_highscore_epoch{epoch}{ext}"
+        else:
+            save_path = f"{base}_epoch{epoch}{ext}"
+        np.savez(save_path,
+                 weight_1=self.weight_1,
+                 bias_1=self.bias_1,
+                 weight_2=self.weight_2,
+                 bias_2=self.bias_2)
     
     def load(self) -> None:
         data = np.load(self.model_path)

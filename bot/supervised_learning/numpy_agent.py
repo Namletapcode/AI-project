@@ -2,17 +2,25 @@ if __name__ == "__main__":
     import sys, os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-# from bot.heuristic_dodge import HeuristicDodgeBot
-from bot.supervised_learning.model import Model
-from game.game_core import Game
 from collections import deque
 import numpy as np
 import random
+import itertools
+from datetime import datetime
+from bot.supervised_learning.model import Model
+from game.game_core import Game
+from bot.deep_learning.base_agent import BaseAgent
+from configs.bot_config import DATE_FORMAT
+import matplotlib.pyplot as plt
 
 MAX_MEMORY = 100_000
-MAX_SAMPLE_SIZE = 5_000
+MIN_MEMORY = 5_000
+BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 
+MODEL_PATH = 'saved_files/supervised/supervised_model.npz'
+GRAPH_PATH = 'saved_files/supervised/supervised_training.png'
+LOG_PATH = 'saved_files/supervised/supervised_log.log'
 class Coach:
     def __init__(self):
         self.wall_penalty_multiple = 1.1
@@ -72,14 +80,12 @@ class Coach:
 
         return final_action
 
-class Supervised_Agent:
-    def __init__(self):
-        self.game = Game()
-        self.model = Model(28, 256, 9, LEARNING_RATE)
-        # self.coach = HeuristicDodgeBot(self.game)
+class Supervised_Agent(BaseAgent):
+    def __init__(self, game: Game, load_saved_model: bool = False):
+        super().__init__(game)
+        self.model = Model(28, 256, 9, LEARNING_RATE, MODEL_PATH, load_saved_model)
         self.coach = Coach()
-        self.memory = deque(maxlen=MAX_MEMORY)
-        self.number_of_games = 0
+        self.losses = []
 
     def get_state(self) -> np.ndarray:
         return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=True)
@@ -90,65 +96,105 @@ class Supervised_Agent:
         action[np.argmax(model_result)] = 1
         return action
     
-    def perform_action(self, action: np.ndarray, render: bool = True):
-        self.game.take_action(action, render)
-
-    def get_score(self) -> int:
-        return self.game.score
-    
     def get_coach_action(self, state: np.ndarray) -> np.ndarray:
         """state = self.game.get_state(True)
         coach_action = self.coach.get_action(state)
         return coach_action"""
         return self.coach.get_action(state)
     
-    def is_game_over(self) -> bool:
-        return self.game.get_reward()[1]
-    
     def train_short_memory(self, state: np.ndarray, expected_action: np.ndarray):
-        self.model.train(state, expected_action)
+        loss = self.model.train(state, expected_action)
+        self.losses.append(loss)
 
     def train_long_memory(self):
-        if len(self.memory) < MAX_SAMPLE_SIZE:
-            mini_sample = self.memory
-        else:
-            mini_sample = random.sample(self.memory, MAX_SAMPLE_SIZE)
-        for state, expected_action in mini_sample:
-            self.model.train(state, expected_action)
+        if len(self.memory) <= MIN_MEMORY:
+            return
+        mini_batch = random.sample(self.memory, BATCH_SIZE)
+        states = np.zeros((BATCH_SIZE, 28), dtype=np.float64)
+        expected_actions = np.zeros((BATCH_SIZE, 9), dtype=np.float64)
+        for i, (state, expected_action) in enumerate(mini_batch):
+            states[i] = state.flatten()
+            expected_actions[i] = expected_action.flatten()
+        # Chuyển thành numpy array và train batch
+        batch_loss = self.model.train_batch(
+            states,             # shape (batch_size, 28)
+            expected_actions    # shape (batch_size, 9)
+        )
+        self.losses.append(batch_loss)
 
     def remember(self, state: np.ndarray, expected_action: np.ndarray):
         self.memory.append((state, expected_action))
-
-    def save(self):
-        self.model.save()
-
-    def reset_game(self):
-        self.game.restart_game()
     
-    def train(self, render: bool = False):
+    def train(self, render: bool = False, show_graph: bool = True):
+        self.set_mode("train")
+        lowest_loss = float('inf')  # Track best (lowest) loss instead of highest score
+        step_count = 0
+        episode_avg_losses = []
+        
+        for episode in itertools.count():
+            self.restart_game()
+            self.number_of_games += 1
+            # get the current game state
+            current_state = self.get_state()
 
-        while True:
+            game_over = False
+            
+            while not game_over:
+                
+                coach_action = self.get_coach_action(current_state)
 
-            state = self.get_state()
+                # perform action in game
+                self.perform_action(np.argmax(coach_action), render)
 
-            coach_action = self.get_coach_action(state)
+                # get the new state after performed action
+                next_state = self.get_state()
 
-            self.perform_action(coach_action, render)
+                # get the reward of the action
+                _, game_over = self.get_reward()
 
-            game_over = self.is_game_over()
-
-            if not game_over:
                 coach_action = coach_action.reshape(9, 1)
-                self.train_short_memory(state, coach_action)
-                self.remember(state, coach_action)
-
-            else:
-                self.number_of_games += 1
-                print("Game:", self.number_of_games,"Score:", self.get_score())
-                self.train_long_memory()
-                if self.number_of_games % 10 == 0:
-                    self.save()
-                self.reset_game()
+                self.train_short_memory(current_state, coach_action)
+                self.remember(current_state, coach_action)
+                
+                step_count += 1
+                current_state = next_state
+            
+            episode_avg_loss = np.mean(self.losses[-step_count:]) if step_count > 0 else float('inf')
+            episode_avg_losses.append(episode_avg_loss)
+            if episode_avg_loss < lowest_loss:
+                log_message = f"{datetime.now().strftime(DATE_FORMAT)} Episode {episode}: New best loss: {episode_avg_loss:.6f}"
+                print(log_message)
+                with open(LOG_PATH, 'a') as log_file:
+                    log_file.write(log_message + '\n')
+                    
+            if episode % 100 == 0:
+                self.model.save(episode, False)
+                
+            self.train_long_memory()
+            
+            # Update graph every 5 games
+            if self.number_of_games % 2 == 0:
+                self.__plot_loss(episode_avg_losses, show_graph)
+    def __plot_loss(self, average_loss, show_graph: bool):
+        """Plot training loss over time"""
+        if len(average_loss) == 0:
+            return
+        
+        if show_graph:
+            plt.ion()   # Ensure interactive mode is on if not headless
+        else:
+            plt.ioff()  # Turn off interactive mode
+        plt.cla()
+        plt.title('Training Loss')
+        plt.xlabel('Training Step')
+        plt.ylabel('Episode Loss')
+        plt.plot(average_loss)
+        plt.grid(True)
+        
+        if show_graph:
+            plt.pause(0.001)
+        
+        plt.savefig(GRAPH_PATH)
 
     def perform(self, render:bool = True):
         
@@ -158,14 +204,14 @@ class Supervised_Agent:
 
             agent_action = self.get_action(state)
 
-            self.perform_action(agent_action, render)
+            self.perform_action(np.argmax(agent_action), render)
 
-            game_over = self.is_game_over()
+            _, game_over = self.get_reward()
 
             if game_over:
                 self.number_of_games += 1
                 print("Game:", self.number_of_games,"Score:", self.get_score())
-                self.reset_game()
+                self.restart_game()
 
             self.game.clock.tick(60)
 
