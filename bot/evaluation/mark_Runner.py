@@ -114,7 +114,8 @@ if __name__ == "__main__":
 
 
     dl_algorithms = [
-        DodgeAlgorithm.DL_PARAM_INPUT_NUMPY,
+        DodgeAlgorithm.DL_PARAM_BATCH_INTERVAL_INPUT_NUMPY,
+        DodgeAlgorithm.DL_PARAM_LONG_SHORT_INPUT_NUMPY,
         DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
         DodgeAlgorithm.DL_VISION_INPUT_NUMPY,
     ]
