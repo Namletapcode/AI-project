@@ -3,11 +3,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import sys
+import numpy as np
 
-project_root = '/content/AI-project'
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+USE_COLAB = False
 
+if USE_COLAB:
+    project_root = '/content/AI-project'
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+elif __name__ == "__main__":
+    # only re-direct below if running this file
+    import sys, os
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+    
 from game.game_core import Game
 from bot.bot_manager import BotManager
 from configs.bot_config import DodgeAlgorithm
@@ -28,8 +36,8 @@ def run_single_episode(algorithm, episode_index):
     while not game_over:
         state = game.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
         action = bot_manager.current_bot.get_action(state)
-        game.update(action)
-        reward, game_over = game.get_reward()
+        game.update(np.argmax(action))
+        _, game_over = game.get_reward()
 
     score = game.score
     print(f"Episode {episode_index}, Score: {score}")
@@ -112,21 +120,21 @@ if __name__ == "__main__":
         results = run_benchmark_parallel(alg, num_episodes=20, num_workers=4)
         all_results.extend(results)
 
-
     dl_algorithms = [
-        DodgeAlgorithm.DL_PARAM_BATCH_INTERVAL_INPUT_NUMPY,
-        DodgeAlgorithm.DL_PARAM_LONG_SHORT_INPUT_NUMPY,
-        DodgeAlgorithm.DL_PARAM_INPUT_TORCH,
-        DodgeAlgorithm.DL_VISION_INPUT_NUMPY,
+        DodgeAlgorithm.DL_PARAM_BATCH_INTERVAL_NUMPY,
+        DodgeAlgorithm.DL_PARAM_LONG_SHORT_NUMPY,
+        DodgeAlgorithm.SUPERVISED
     ]
 
     for alg in dl_algorithms:
         print(f"\n=== Benchmarking Deep Learning Bot: {alg.name} ===")
         results = run_benchmark_parallel(alg, num_episodes=20, num_workers=4)
         all_results.extend(results)
-        
-
+    
     df = pd.DataFrame(all_results)
-    save_results(df)
+    if USE_COLAB:
+        save_results(df)
+    else:
+        save_results(df, 'saved_files/benchmark')
 
     print(" Đã lưu kết quả và biểu đồ vào Google Drive.")
