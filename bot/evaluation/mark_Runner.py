@@ -34,7 +34,7 @@ def run_single_episode(algorithm, episode_index):
     game_over = False
 
     while not game_over:
-        state = game.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
+        state = game.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.method)
         action = bot_manager.current_bot.get_action(state)
         game.update(np.argmax(action))
         _, game_over = game.get_reward()

@@ -44,7 +44,7 @@ class Game:
                 update_timer += frame_time
                 # Use first_frame to update immediately (to avoid not being able to update before drawing)
                 while update_timer >= update_interval or first_frame:
-                    current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.is_numpy)
+                    current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.method)
                     action = bot_manager.current_bot.get_action(current_state)
                     self.update(np.argmax(action))
                     if self.score in [250, 251, 252, 253]:
@@ -62,7 +62,7 @@ class Game:
         if render:
             self.draw()
 
-    def get_state(self, is_heuristic: bool = False, is_vision: bool = False, is_numpy: bool = True):
+    def get_state(self, is_heuristic: bool = False, is_vision: bool = False, method: str = "numpy"):
         """
         Get current game state as numpy array.
         
@@ -96,7 +96,7 @@ class Game:
                 state = np.zeros(len(sector_flags) + len(near_wall_info), dtype=np.float64)
                 state[:len(sector_flags)] = sector_flags
                 state[len(sector_flags):] = near_wall_info
-            if is_numpy:
+            if method == "numpy":
                 state = state.reshape(len(state), 1)
         return state
     

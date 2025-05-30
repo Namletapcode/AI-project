@@ -59,10 +59,10 @@ class Model:
     
     def __backpropagation(self, model_raw_hidden_output: np.ndarray, model_act_hidden_output: np.ndarray, model_raw_output: np.ndarray, input: np.ndarray, expected_output: np.ndarray) -> None:
         # calculate deltas
-        loss                = model_raw_output - expected_output
-        delta_weight_2      = loss.dot(model_act_hidden_output.T)
-        delta_bias_2        = np.sum(loss, axis=1, keepdims=True)           # in this case: batch_size = 1, db2 = loss, same to bd1 below
-        delta_hidden        = self.main_weight_2.T.dot(loss) * self.__derivative_ReLU(model_raw_hidden_output)
+        delta_output        = model_raw_output - expected_output
+        delta_weight_2      = delta_output.dot(model_act_hidden_output.T)
+        delta_bias_2        = np.sum(delta_output, axis=1, keepdims=True)           # in this case: batch_size = 1, db2 = delta_output, same to bd1 below
+        delta_hidden        = self.main_weight_2.T.dot(delta_output) * self.__derivative_ReLU(model_raw_hidden_output)
         delta_weight_1      = delta_hidden.dot(input.T)
         delta_bias_1        = np.sum(delta_hidden, axis=1, keepdims=True)
 

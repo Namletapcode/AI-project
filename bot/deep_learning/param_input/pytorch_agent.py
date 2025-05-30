@@ -28,9 +28,9 @@ NETWORK_UPDATE_FREQ = 1000
 HEURISTIC_METHOD = DodgeAlgorithm.LEAST_DANGER_PATH
 IMITATION_PROBABILITY = 0.2 # 20% action selected based on heuristic_bot
 
-MODEL_PATH = 'saved_files/param_pytorch/param_pytorch_model.pth'
-GRAPH_PATH = 'saved_files/param_pytorch/param_pytorch_training.png'
-LOG_PATH = 'saved_files/param_pytorch/param_pytorch_log.log'
+MODEL_PATH = 'saved_files/param/torch/model.pth'
+GRAPH_PATH = 'saved_files/param/torch/graph.png'
+LOG_PATH = 'saved_files/param/torch/log.log'
 
 class ParamTorchAgent(BaseAgent):
 
@@ -217,7 +217,7 @@ class ParamTorchAgent(BaseAgent):
         self.trainer.train_step(state, action, reward, next_state, done)
     
     def get_state(self) -> np.ndarray:
-        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=False)
+        return self.game.get_state(is_heuristic=False, is_vision=False, method="torch")
     
     def load_model(self):
         self.policy_net.load()

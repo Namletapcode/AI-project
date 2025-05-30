@@ -15,22 +15,22 @@ from utils.bot_helper import plot_training_progress, show_numpy_to_image
 
 MAX_MEMORY = 10000
 MIN_MEMORY = 1000 # at least 1000 samples in memory before training
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 LEARNING_RATE = 0.0001
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1
-EPSILON_DECAY = 0.999
-MIN_EPSILON = 0.01
+EPSILON_DECAY = 0.9995
+MIN_EPSILON = 0.05
 NETWORK_UPDATE_FREQ = 1000
 
-IMG_SIZE = 80 # 80 x 80 pixel^2
+IMG_SIZE = 50 # 80 x 80 pixel^2
 
 USE_SOFT_UPDATE = False
 TAU = 0.005
 
-MODEL_PATH = 'saved_files/vision_numpy/vision_numpy_model.npz'
-GRAPH_PATH = 'saved_files/vision_numpy/vision_numpy_training.png'
-LOG_PATH = 'saved_files/vision_numpy/vision_numpy_log.log'
+MODEL_PATH = 'saved_files/vision/numpy/model.npz'
+GRAPH_PATH = 'saved_files/vision/numpy/graph.png'
+LOG_PATH = 'saved_files/vision/numpy/log.log'
 
 class VisionNumpyAgent(BaseAgent):
     def __init__(self, game: Game, load_saved_model: bool = False):
@@ -47,7 +47,7 @@ class VisionNumpyAgent(BaseAgent):
         self.img_02 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
 
     def get_state(self) -> np.ndarray: # get game state. stack of two consecutive screenshot around player
-        return self.game.get_state(is_heuristic=False, is_vision=True, is_numpy=True)
+        return self.game.get_state(is_heuristic=False, is_vision=True, method="numpy")
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         move = np.zeros((9, ), dtype=np.float64)
@@ -108,7 +108,6 @@ class VisionNumpyAgent(BaseAgent):
             episode_score = 0
             
             while not game_over and episode_score < self.stop_on_score:
-                
                 # get the move based on the state
                 action = self.get_action(current_state)
 
@@ -149,8 +148,7 @@ class VisionNumpyAgent(BaseAgent):
                 self.model.save(episode, True)
             elif episode % 300 == 0:
                 self.model.save(episode, False)
-            self.train_long_memory()
-            
+
             self.train_long_memory()
             
             if not USE_SOFT_UPDATE and step_count >= self.network_update_freq:

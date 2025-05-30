@@ -3,11 +3,15 @@ from configs.bot_config import (
     DodgeAlgorithm, DODGE_ALGORITHM,
     SCAN_RADIUS, USE_COMPLEX_SCANNING, BOT_ACTION)
 from utils.draw_utils import draw_sector, draw_complex_sector
+from configs.bot_config import IMG_SIZE
 from bot.heuristic_dodge import HeuristicDodgeBot
 from bot.deep_learning.param_input.numpy_batch_interval_agent import ParamNumpyBatchIntervalNumpyAgent
 from bot.deep_learning.param_input.numpy_long_short_agent import ParamNumpyLongShortAgent
 from bot.deep_learning.param_input.pytorch_agent import ParamTorchAgent
 from bot.deep_learning.vision_input.numpy_agent import VisionNumpyAgent
+from bot.deep_learning.vision_input.cupy_batch_interval_agent import VisionCupyBatchIntervalNumpyAgent
+from bot.deep_learning.vision_input.cupy_long_short_agent import VisionCupyLongShortAgent
+from bot.supervised_learning.numpy_agent import Supervised_Agent
 
 class BotManager:
     def __init__(self, game):
@@ -15,7 +19,7 @@ class BotManager:
         self.current_bot = None
         self.is_heuristic = False
         self.is_vision = False
-        self.is_numpy = True
+        self.method = "numpy"
         
     def create_bot(self, algorithm: DodgeAlgorithm = DODGE_ALGORITHM, load_saved_model: bool = False):
         """Create a bot based on the specified dodge algorithm."""
@@ -31,19 +35,27 @@ class BotManager:
         else:
             self.is_heuristic = False
             self.is_vision = False
-            self.is_numpy = False
-            if algorithm == DodgeAlgorithm.DL_PARAM_BATCH_INTERVAL_INPUT_NUMPY:
-                self.current_bot = ParamNumpyBatchIntervalNumpyAgent(self.game, load_saved_model)
-                self.is_numpy = True
-            elif algorithm == DodgeAlgorithm.DL_PARAM_LONG_SHORT_INPUT_NUMPY:
-                self.current_bot = ParamNumpyLongShortAgent(self.game, load_saved_model)
-                self.is_numpy = True
-            elif algorithm == DodgeAlgorithm.DL_PARAM_INPUT_TORCH:
-                self.current_bot = ParamTorchAgent(self.game, load_saved_model)
-            elif algorithm == DodgeAlgorithm.DL_VISION_INPUT_NUMPY:
-                self.current_bot = VisionNumpyAgent(self.game, load_saved_model)
-                self.is_vision = True
-                self.is_numpy = True
+            self.method = "numpy"
+            match algorithm:
+                case DodgeAlgorithm.DL_PARAM_BATCH_INTERVAL_NUMPY:
+                    self.current_bot = ParamNumpyBatchIntervalNumpyAgent(self.game, load_saved_model)
+                case DodgeAlgorithm.DL_PARAM_LONG_SHORT_NUMPY:
+                    self.current_bot = ParamNumpyLongShortAgent(self.game, load_saved_model)
+                case DodgeAlgorithm.DL_PARAM_TORCH:
+                    self.current_bot = ParamTorchAgent(self.game, load_saved_model)
+                case DodgeAlgorithm.DL_VISION_NUMPY:
+                    self.current_bot = VisionNumpyAgent(self.game, load_saved_model)
+                    self.is_vision = True
+                case DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_CUPY:
+                    self.current_bot = VisionCupyBatchIntervalNumpyAgent(self.game, load_saved_model)
+                    self.is_vision = True
+                    self.method = "cupy"
+                case DodgeAlgorithm.DL_VISION_LONG_SHORT_CUPY:
+                    self.current_bot = VisionCupyLongShortAgent(self.game, load_saved_model)
+                    self.is_vision = True
+                    self.method = "cupy"
+                case DodgeAlgorithm.SUPERVISED:
+                    self.current_bot = Supervised_Agent(self.game, load_saved_model)
         return self.current_bot
     
     def get_action(self, state) -> np.ndarray:
@@ -52,7 +64,7 @@ class BotManager:
             return self.current_bot.get_action(state)
         return None
     
-    def draw_bot_vision(self, state):
+    def draw_bot_vision(self, state, share_state):
         """Vẽ vision của bot và hướng di chuyển"""
         if not self.current_bot:
             return
@@ -60,24 +72,28 @@ class BotManager:
         player = self.game.player
         surface = self.game.surface
         
-        # Vẽ vòng tròn scan
-        player.draw_surround_circle(SCAN_RADIUS)
-        
-        # Vẽ các sectors
-        if USE_COMPLEX_SCANNING:
-            self._draw_complex_sectors(SCAN_RADIUS)
+        if share_state.is_vision:
+            player.draw_surround_square(IMG_SIZE)
+            self.game.bullet_manager.color_in_square(IMG_SIZE, (128,0,128))
         else:
-            self._draw_simple_sectors(SCAN_RADIUS)
+            # Vẽ vòng tròn scan
+            player.draw_surround_circle(SCAN_RADIUS)
             
-        # Tô màu đạn trong vùng scan    
-        self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128,0,128))
-        
-        # Vẽ hướng di chuyển của bot
-        bot_direction = self.get_action(state)
-        best_direction_index = np.argmax(bot_direction)
-        if best_direction_index != 8:
-            draw_sector(surface, player.x, player.y, 
-                        50, best_direction_index, (0, 255, 0))
+            # Vẽ các sectors
+            if USE_COMPLEX_SCANNING:
+                self._draw_complex_sectors(SCAN_RADIUS)
+            else:
+                self._draw_simple_sectors(SCAN_RADIUS)
+                
+            # Tô màu đạn trong vùng scan    
+            self.game.bullet_manager.color_in_radius(SCAN_RADIUS, (128,0,128))
+            
+            # Vẽ hướng di chuyển của bot
+            bot_direction = self.get_action(state)
+            best_direction_index = np.argmax(bot_direction)
+            if best_direction_index != 8:
+                draw_sector(surface, player.x, player.y, 
+                            50, best_direction_index, (0, 255, 0))
 
     def _draw_simple_sectors(self, radius: int):
         """Vẽ các sector đơn giản (chỉ chia theo góc)"""

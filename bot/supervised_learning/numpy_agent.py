@@ -88,7 +88,7 @@ class Supervised_Agent(BaseAgent):
         self.losses = []
 
     def get_state(self) -> np.ndarray:
-        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=True)
+        return self.game.get_state(is_heuristic=False, is_vision=False, method="numpy")
     
     def get_action(self, state: np.ndarray) -> np.ndarray:
         action = np.zeros((9,), dtype=np.float64)
@@ -167,7 +167,7 @@ class Supervised_Agent(BaseAgent):
                 with open(LOG_PATH, 'a') as log_file:
                     log_file.write(log_message + '\n')
                     
-            if episode % 100 == 0:
+            if episode % 20 == 0:
                 self.model.save(episode, False)
                 
             self.train_long_memory()
@@ -185,9 +185,9 @@ class Supervised_Agent(BaseAgent):
         else:
             plt.ioff()  # Turn off interactive mode
         plt.cla()
-        plt.title('Training Loss')
-        plt.xlabel('Training Step')
-        plt.ylabel('Episode Loss')
+        plt.title('Episode average Loss')
+        plt.xlabel('Episode')
+        plt.ylabel('Loss')
         plt.plot(average_loss)
         plt.grid(True)
         
@@ -214,6 +214,9 @@ class Supervised_Agent(BaseAgent):
                 self.restart_game()
 
             self.game.clock.tick(60)
+            
+    def load_model(self):
+        self.model.load()
 
     def bench(self):
         # manually used to find the best multiple
