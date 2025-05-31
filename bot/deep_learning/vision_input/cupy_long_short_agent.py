@@ -150,7 +150,7 @@ class VisionCupyLongShortAgent(BaseAgent):
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
                 cpu_scores = cp.asnumpy(scores_per_episode)
-                plot_training_progress(cpu_scores, title='Vision_cupy Training', show_graph=show_graph, save_dir=GRAPH_PATH)
+                plot_training_progress(cpu_scores, title='Vision LongShort Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY

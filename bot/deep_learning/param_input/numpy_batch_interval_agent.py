@@ -28,9 +28,9 @@ TRAIN_INTERVAL = 10
 USE_SOFT_UPDATE = False
 TAU = 0.005
 
-MODEL_PATH = 'saved_files/param_numpy_batch_interval/param_numpy_batch_interval_model.npz'
-GRAPH_PATH = 'saved_files/param_numpy_batch_interval/param_numpy_batch_interval_training.png'
-LOG_PATH = 'saved_files/param_numpy_batch_interval/param_numpy_batch_interval_log.log'
+MODEL_PATH = 'saved_files/param/numpy/batch_interval.npz'
+GRAPH_PATH = 'saved_files/param/numpy/batch_interval.png'
+LOG_PATH = 'saved_files/param/numpy/batch_interval.log'
 
 class ParamNumpyBatchIntervalNumpyAgent(BaseAgent):
 
@@ -47,7 +47,7 @@ class ParamNumpyBatchIntervalNumpyAgent(BaseAgent):
         Get the current game state and reshape it to 28x1 for model input
         example: array([1, 1, 0, 0, 0, 1, 0, ...0])
         """
-        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=True)
+        return self.game.get_state(is_heuristic=False, is_vision=False, method="numpy")
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         action = np.zeros((9, ), dtype=np.float64)
@@ -143,7 +143,7 @@ class ParamNumpyBatchIntervalNumpyAgent(BaseAgent):
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                plot_training_progress(scores_per_episode, title='Param_numpy Training', show_graph=show_graph, save_dir=GRAPH_PATH)
+                plot_training_progress(scores_per_episode, title='Param BatchInterval Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY

@@ -154,7 +154,7 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                plot_training_progress(scores_per_episode, title='Param_numpy Training', show_graph=show_graph, save_dir=GRAPH_PATH)
+                plot_training_progress(scores_per_episode, title='Vision BatchInterval Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY

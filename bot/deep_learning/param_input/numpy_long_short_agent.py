@@ -11,10 +11,9 @@ if __name__ == "__main__":
 from bot.deep_learning.models.numpy_model import Model
 from game.game_core import Game
 from bot.deep_learning.base_agent import BaseAgent
-from configs.bot_config import DodgeAlgorithm, DATE_FORMAT
+from configs.bot_config import DATE_FORMAT
 from utils.bot_helper import plot_training_progress
 
-MAX_MEMORY = 100000
 MIN_MEMORY = 1000 # at least 1000 samples in memory before training
 BATCH_SIZE = 64
 LEARNING_RATE = 0.001
@@ -27,9 +26,9 @@ NETWORK_UPDATE_FREQ = 250
 USE_SOFT_UPDATE = False
 TAU = 0.005
 
-MODEL_PATH = 'saved_files/param_numpy_long_short/param_numpy_long_short_model.npz'
-GRAPH_PATH = 'saved_files/param_numpy_long_short/param_numpy_long_short_training.png'
-LOG_PATH = 'saved_files/param_numpy_long_short/param_numpy_long_short_log.log'
+MODEL_PATH = 'saved_files/param/numpy/long_short.npz'
+GRAPH_PATH = 'saved_files/param/numpy/long_short.png'
+LOG_PATH = 'saved_files/param/numpy/long_short.log'
 
 class ParamNumpyLongShortAgent(BaseAgent):
 
@@ -46,7 +45,7 @@ class ParamNumpyLongShortAgent(BaseAgent):
         Get the current game state and reshape it to 28x1 for model input
         example: array([1, 1, 0, 0, 0, 1, 0, ...0])
         """
-        return self.game.get_state(is_heuristic=False, is_vision=False, is_numpy=True)
+        return self.game.get_state(is_heuristic=False, is_vision=False, method="numpy")
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         action = np.zeros((9, ), dtype=np.float64)
@@ -57,10 +56,10 @@ class ParamNumpyLongShortAgent(BaseAgent):
                 action[random.randint(0, 8)] = 1
             else:
                 # if not model will predict the action
-                action[np.argmax(self.model.forward(state)[2])] = 1
+                action[np.argmax(self.model.predict(state))] = 1
         elif self.mode == "perform":
             # always use model to predict action in pridict action / always predict
-            action[np.argmax(self.model.forward(state)[2])] = 1
+            action[np.argmax(self.model.predict(state))] = 1
         return action
 
     def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
@@ -153,7 +152,7 @@ class ParamNumpyLongShortAgent(BaseAgent):
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                plot_training_progress(scores_per_episode, title='Param_numpy Training', show_graph=show_graph, save_dir=GRAPH_PATH)
+                plot_training_progress(scores_per_episode, title='Param LongShort Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY
