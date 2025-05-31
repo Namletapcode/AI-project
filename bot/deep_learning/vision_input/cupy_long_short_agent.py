@@ -48,8 +48,7 @@ class VisionCupyLongShortAgent(BaseAgent):
         Get the current game state and reshape it to 28x1 for model input
         example: array([1, 1, 0, 0, 0, 1, 0, ...0])
         """
-        np_state = self.game.get_state(is_heuristic=False, is_vision=True, method="cupy")
-        return cp.asarray(np_state)
+        return self.game.get_state(is_heuristic=False, is_vision=True, method="cupy")
 
     def get_action(self, state: cp.ndarray) -> cp.ndarray:
         action = cp.zeros((9, ), dtype=cp.float64)
@@ -65,6 +64,19 @@ class VisionCupyLongShortAgent(BaseAgent):
             # always use model to predict action in pridict action / always predict
             action[cp.argmax(self.model.predict(state))] = 1
         return action
+
+    def get_action_idx(self, state: cp.ndarray) -> int:
+        if self.mode == "train":
+            # decise to take a random action or not
+            if random.random() < self.epsilon:
+                # if yes pick a random action
+                return random.randint(0, 8)
+            else:
+                # if not model will predict the action
+                return int(cp.argmax(self.model.predict(state)))
+        elif self.mode == "perform":
+            # always use model to predict action in pridict action / always predict
+            return int(cp.argmax(self.model.predict(state)))
 
     def train_short_memory(self, current_state: cp.ndarray, action: cp.ndarray, reward: float, next_state: cp.ndarray, game_over: bool):
         target = self.model.compute_target(current_state, action, reward, next_state, game_over)
@@ -149,8 +161,7 @@ class VisionCupyLongShortAgent(BaseAgent):
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                cpu_scores = cp.asnumpy(scores_per_episode)
-                plot_training_progress(cpu_scores, title='Vision LongShort Training', show_graph=show_graph, save_dir=GRAPH_PATH)
+                plot_training_progress(scores_per_episode, title='Vision LongShort Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY

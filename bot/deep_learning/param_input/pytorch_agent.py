@@ -26,7 +26,6 @@ MIN_EPSILON = 0.1
 NETWORK_UPDATE_FREQ = 1000
 
 HEURISTIC_METHOD = DodgeAlgorithm.LEAST_DANGER_PATH
-IMITATION_PROBABILITY = 0.2 # 20% action selected based on heuristic_bot
 
 MODEL_PATH = 'saved_files/param/torch/model.pth'
 GRAPH_PATH = 'saved_files/param/torch/graph.png'
@@ -50,7 +49,6 @@ class ParamTorchAgent(BaseAgent):
         self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 1000 steps
         
         self.heuristic_bot = HeuristicDodgeBot(game, HEURISTIC_METHOD)
-        self.imitation_prob = IMITATION_PROBABILITY
         
     def train(self, render: bool = False, show_graph: bool = True) -> None:
         self.set_mode("train")
@@ -87,7 +85,7 @@ class ParamTorchAgent(BaseAgent):
                     device=self.device
                 )
                 
-                self.perform_action(action, render)
+                self.perform_action(np.argmax(action), render)
             
                 next_state = self.get_state()
                 
@@ -169,7 +167,7 @@ class ParamTorchAgent(BaseAgent):
             action = self.get_action(current_state)
             
             # Perform action
-            self.perform_action(action, render)
+            self.perform_action(np.argmax(action), render)
             
             # Check if game over
             _, game_over = self.get_reward()
@@ -189,11 +187,8 @@ class ParamTorchAgent(BaseAgent):
         if self.mode == "train":
             # decise to take a random move or not
             if random.random() < self.epsilon:
-                if random.random() < self.imitation_prob:
-                    action = self.heuristic_bot.get_action(self.game.get_state(is_heuristic=True))
-                else:
-                    # if yes pick a random move
-                    action[random.randint(0, 8)] = 1
+                # if yes pick a random move
+                action[random.randint(0, 8)] = 1
             else:
                 # if not model will predict the move
                 with torch.no_grad(): # eliminate gradient calculation
@@ -205,7 +200,27 @@ class ParamTorchAgent(BaseAgent):
                 predicted_idx = self.policy_net(state_tensor.unsqueeze(dim=0)).squeeze().argmax()
                 action[predicted_idx] = 1
         return action
-
+    
+    def get_action_idx(self, state: np.ndarray) -> int:
+        state_tensor = torch.as_tensor(
+            state, 
+            dtype=torch.float, 
+            device=self.device
+        )
+        # random moves: tradeoff exploration / exploitation
+        if self.mode == "train":
+            # decise to take a random move or not
+            if random.random() < self.epsilon:
+                return random.randint(0, 8)
+            else:
+                # if not model will predict the move
+                with torch.no_grad(): # eliminate gradient calculation
+                    return self.policy_net(state_tensor.unsqueeze(dim=0)).squeeze().argmax()
+        elif self.mode == "perform":
+            # always use model to predict move in pridict move / always predict
+            with torch.no_grad(): # eliminate gradient calculation
+                return self.policy_net(state_tensor.unsqueeze(dim=0)).squeeze().argmax()
+            
     def train_long_memory(self):
         if len(self.memory) < BATCH_SIZE:
             return

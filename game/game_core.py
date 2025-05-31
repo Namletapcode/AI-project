@@ -2,6 +2,7 @@ import pygame
 import sys
 import math
 import numpy as np
+import cupy as cp
 from configs.game_config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, UPS,
     dt_max, BOX_LEFT, BOX_TOP, BOX_SIZE
@@ -45,11 +46,8 @@ class Game:
                 # Use first_frame to update immediately (to avoid not being able to update before drawing)
                 while update_timer >= update_interval or first_frame:
                     current_state = self.get_state(bot_manager.is_heuristic, bot_manager.is_vision, bot_manager.method)
-                    action = bot_manager.current_bot.get_action(current_state)
-                    self.update(np.argmax(action))
-                    if self.score in [250, 251, 252, 253]:
-                        with open("log.txt", "a") as f:
-                            f.write(f"Time: {self.update_counter},\nPlayer: ({self.player.x}, {self.player.y}),\nState: {[idx for idx, val in enumerate(current_state) if val == 1]},\nAction: {action}\n")
+                    action_idx = bot_manager.current_bot.get_action_idx(current_state)
+                    self.update(action_idx)
                     update_timer -= update_interval
                     first_frame = False
                 if render:
@@ -79,11 +77,18 @@ class Game:
             state = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
         else:
             if is_vision:
-                if not hasattr(self, "img_01") or self.img_01 is None:
-                    self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
-                img_02 = get_screen_shot_blue_channel(self.player.x, self.player.y, IMG_SIZE, self.surface)
-                state = np.concatenate((self.img_01, img_02), axis=0)
-                self.img_01 = img_02
+                if method == "numpy":
+                    if not hasattr(self, "img_01") or self.img_01 is None:
+                        self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
+                    img_02 = get_screen_shot_blue_channel(self.player.x, self.player.y, IMG_SIZE, self.surface)
+                    state = np.concatenate((self.img_01, img_02), axis=0)
+                    self.img_01 = img_02
+                else:
+                    if not hasattr(self, "img_01") or self.img_01 is None:
+                        self.img_01 = cp.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
+                    img_02 = cp.asarray(get_screen_shot_blue_channel(self.player.x, self.player.y, IMG_SIZE, self.surface))
+                    state = cp.concatenate((self.img_01, img_02), axis=0)
+                    self.img_01 = img_02
             else:
                 bullets_in_radius = self.bullet_manager.get_bullet_in_range(SCAN_RADIUS)
                 if USE_COMPLEX_SCANNING:

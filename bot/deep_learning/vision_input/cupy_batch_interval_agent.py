@@ -53,8 +53,7 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
         Get the current game state and reshape it to 28x1 for model input
         example: array([1, 1, 0, 0, 0, 1, 0, ...0])
         """
-        np_state = self.game.get_state(is_heuristic=False, is_vision=True, method="cupy")
-        return cp.asarray(np_state)
+        return self.game.get_state(is_heuristic=False, is_vision=True, method="cupy")
 
     def get_action(self, state: cp.ndarray) -> cp.ndarray:
         action = cp.zeros((9, ), dtype=cp.float64)
@@ -70,6 +69,19 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
             # always use model to predict action in pridict action / always predict
             action[int(cp.argmax(self.model.predict(state)))] = 1
         return action
+    
+    def get_action_idx(self, state: cp.ndarray) -> int:
+        if self.mode == "train":
+            # decise to take a random action or not
+            if random.random() < self.epsilon:
+                # if yes pick a random action
+                return random.randint(0, 8)
+            else:
+                # if not model will predict the action
+                return int(cp.argmax(self.model.predict(state)))
+        elif self.mode == "perform":
+            # always use model to predict action in pridict action / always predict
+            return int(cp.argmax(self.model.predict(state)))
     
     def restart_game(self):
         self.game.restart_game()

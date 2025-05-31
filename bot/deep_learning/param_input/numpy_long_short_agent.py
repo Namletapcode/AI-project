@@ -61,6 +61,19 @@ class ParamNumpyLongShortAgent(BaseAgent):
             # always use model to predict action in pridict action / always predict
             action[np.argmax(self.model.predict(state))] = 1
         return action
+    
+    def get_action_idx(self, state: np.ndarray) -> int:
+        if self.mode == "train":
+            # decise to take a random action or not
+            if random.random() < self.epsilon:
+                # if yes pick a random action
+                return random.randint(0, 8)
+            else:
+                # if not model will predict the action
+                return np.argmax(self.model.predict(state))
+        elif self.mode == "perform":
+            # always use model to predict action in pridict action / always predict
+            return np.argmax(self.model.predict(state))
 
     def train_short_memory(self, current_state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, game_over: bool):
         target = self.model.compute_target(current_state, action, reward, next_state, game_over)

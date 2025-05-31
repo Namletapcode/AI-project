@@ -39,30 +39,37 @@ class VisionNumpyAgent(BaseAgent):
         self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, DISCOUNT_FACTOR, MODEL_PATH, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
         
         self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 250 steps
-        
-        self.reset_self_img()
-
-    def reset_self_img(self):
-        self.img_01 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
-        self.img_02 = np.zeros((IMG_SIZE ** 2, 1), dtype=np.float64)
 
     def get_state(self) -> np.ndarray: # get game state. stack of two consecutive screenshot around player
         return self.game.get_state(is_heuristic=False, is_vision=True, method="numpy")
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
-        move = np.zeros((9, ), dtype=np.float64)
+        action = np.zeros((9, ), dtype=np.float64)
         if self.mode == "train":
             # decise to take a random move or not
             if random.random() < self.epsilon:
                 # if yes pick a random move
-                move[random.randint(0, 8)] = 1
+                action[random.randint(0, 8)] = 1
             else:
                 # if not model will predict the move
-                move[np.argmax(self.model.forward(state)[2])] = 1
+                action[np.argmax(self.model.predict(state))] = 1
         elif self.mode == "perform":
             # always use model to predict move in pridict move / always predict
-            move[np.argmax(self.model.forward(state)[2])] = 1
-        return move
+            action[np.argmax(self.model.predict(state))] = 1
+        return action
+    
+    def get_action_idx(self, state: np.ndarray) -> int:
+        if self.mode == "train":
+            # decise to take a random action or not
+            if random.random() < self.epsilon:
+                # if yes pick a random action
+                return random.randint(0, 8)
+            else:
+                # if not model will predict the action
+                return np.argmax(self.model.predict(state))
+        elif self.mode == "perform":
+            # always use model to predict action in pridict action / always predict
+            return np.argmax(self.model.predict(state))
     
     def restart_game(self):
         self.game.restart_game()
@@ -189,9 +196,6 @@ class VisionNumpyAgent(BaseAgent):
             
     def load_model(self):
         self.model.load()
-        
-    def visualize_state(self):
-        show_numpy_to_image(self.img_02, IMG_SIZE)
 
 if __name__ == '__main__':
     agent = VisionNumpyAgent(Game())
