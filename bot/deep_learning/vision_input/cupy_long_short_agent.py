@@ -14,13 +14,13 @@ from bot.deep_learning.base_agent import BaseAgent
 from configs.bot_config import DATE_FORMAT
 from utils.bot_helper import plot_training_progress
 
-MAX_MEMORY = 10000
+MAX_MEMORY = 100000
 MIN_MEMORY = 1000 # at least 1000 samples in memory before training
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 LEARNING_RATE = 0.0001
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1
-EPSILON_DECAY = 0.9995
+EPSILON_DECAY = 0.999
 MIN_EPSILON = 0.01
 NETWORK_UPDATE_FREQ = 1000
 

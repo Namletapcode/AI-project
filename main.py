@@ -1,15 +1,19 @@
-import os, sys, pygame
+import os, sys
 import matplotlib.pyplot as plt
 from game.game_core import Game
 from configs.bot_config import DodgeAlgorithm, SharedState
 from bot.bot_manager import BotManager
 
-bot_type = DodgeAlgorithm.DL_PARAM_LONG_SHORT_NUMPY
+bot_type = DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_CUPY
 game_render = True
-bot_mode = "perform"
+bot_mode = "train"
 show_graph = True
 
 HEADLESS_MODE = False # For google colab
+
+if os.getenv("COLAB_RELEASE_TAG"):
+    HEADLESS_MODE = True
+    
 if HEADLESS_MODE:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     game_render = False
@@ -43,7 +47,7 @@ def run_game(share_state):
     bot_manager.create_bot(bot_type)
     game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)
     
-if __name__ == "__main__":    
+if __name__ == "__main__":
     share_state = SharedState()
     if bot_mode == "perform":
         import multiprocessing as mp
