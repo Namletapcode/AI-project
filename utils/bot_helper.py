@@ -135,9 +135,6 @@ def get_screen_shot_blue_channel(x: float, y: float, img_size: int, surface: pyg
     """
     # Trích kênh Blue từ surface (không .copy vì chỉ đọc)
     blue_channel = pygame.surfarray.pixels_blue(surface)  # shape (width, height)
-
-    # Chuyển từ (W, H) sang (H, W) để đúng với xử lý ảnh
-    blue_channel = np.transpose(blue_channel)
     
     # Cắt ảnh xung quanh điểm (x, y)
     half = img_size // 2
