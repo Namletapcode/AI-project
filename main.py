@@ -37,16 +37,6 @@ class GameThread(threading.Thread):
         self.share_state = share_state
 
     def run(self):
-        if not HEADLESS_MODE:
-            if show_graph:
-                plt.ion()
-                os.environ['SDL_VIDEO_WINDOW_POS'] = '200,280' # Move pygame window
-            else:
-                plt.ioff()
-            plt.figure()
-            manager = plt.get_current_fig_manager()
-            manager.window.move(690, 200) # Move plot window
-        
         game = Game(self.share_state)
         bot_manager = BotManager(game)
         
@@ -54,12 +44,27 @@ class GameThread(threading.Thread):
         game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)
     
 if __name__ == "__main__":
-    share_state = SharedState()
-    
-    game_thread = GameThread(share_state)
-    game_thread.start()
-    
     if bot_mode == "perform":
-        run_settings(share_state)
+        share_state = SharedState()
         
-    game_thread.join()
+        game_thread = GameThread(share_state)
+        game_thread.start()
+        
+        run_settings(share_state)
+            
+        game_thread.join()
+    elif bot_mode == "train":
+        if not HEADLESS_MODE:
+            if show_graph:
+                plt.ion()
+                os.environ['SDL_VIDEO_WINDOW_POS'] = '200,280' # Move pygame window
+            else:
+                plt.ioff()
+        plt.figure()
+        manager = plt.get_current_fig_manager()
+        manager.window.move(690, 200) # Move plot window
+        game = Game()
+        bot_manager = BotManager(game)
+        
+        bot_manager.create_bot(bot_type, True)
+        game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)
