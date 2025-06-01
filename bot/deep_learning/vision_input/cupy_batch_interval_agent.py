@@ -2,6 +2,7 @@ import cupy as cp
 import random
 import itertools
 from datetime import datetime
+import atexit, pickle
 
 if __name__ == "__main__":
     # only re-direct below if running this file
@@ -33,6 +34,7 @@ TAU = 0.005
 MODEL_PATH = 'saved_files/vision/cupy/batch_interval.npz'
 GRAPH_PATH = 'saved_files/vision/cupy/batch_interval.png'
 LOG_PATH = 'saved_files/vision/cupy/batch_interval.log'
+TRAINING_STATE_PATH = 'saved_files/vision/cupy/batch_interval.pkl'
 
 class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
 
@@ -44,9 +46,52 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
         
         self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 250 steps
         
-    def reset_self_img(self):
-        self.img_01 = cp.zeros((IMG_SIZE ** 2, 1), dtype=cp.float64)
-        self.img_02 = cp.zeros((IMG_SIZE ** 2, 1), dtype=cp.float64)
+        if load_saved_model:
+            self.load_training_state()
+            print(self.episode)
+            
+        # Register save handlers
+        atexit.register(self.save_training_state) # Normal exits, clean shutdowns
+
+    def save_training_state(self):
+        """Save all training progress and states"""
+        training_state = {
+            'rewards_per_episode': self.rewards_per_episode,
+            'scores_per_episode': self.scores_per_episode,
+            'best_score': self.best_score,
+            'step_count': self.step_count,
+            'episode': self.episode,
+            'epsilon': self.epsilon,
+            'memory': self.memory
+        }
+        
+        with open(TRAINING_STATE_PATH, 'wb') as f:
+            pickle.dump(training_state, f)
+        
+        # Also save model
+        self.model.save(self.episode, False)
+        
+        print(f"Training state saved to {TRAINING_STATE_PATH}")
+
+    def load_training_state(self):
+        """Load previous training progress and states"""
+        try:
+            with open(TRAINING_STATE_PATH, 'rb') as f:
+                training_state = pickle.load(f)
+                
+            self.rewards_per_episode = training_state['rewards_per_episode']
+            self.scores_per_episode = training_state['scores_per_episode']
+            self.best_score = training_state['best_score']
+            self.step_count = training_state['step_count']
+            self.episode = training_state['episode']
+            self.epsilon = training_state['epsilon']
+            self.memory = training_state['memory']
+            
+            print(f"Loaded training state from {TRAINING_STATE_PATH}")
+            print(f"Continuing from episode {self.episode} with best score {self.best_score}")
+            
+        except FileNotFoundError:
+            print("No previous training state found, starting fresh")
 
     def get_state(self) -> cp.ndarray:
         """
@@ -83,18 +128,15 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
             # always use model to predict action in pridict action / always predict
             return int(cp.argmax(self.model.predict(state)))
     
-    def restart_game(self):
-        self.game.restart_game()
-        self.reset_self_img()
-    
     def train(self, render: bool = False, show_graph: bool = True):
         self.set_mode("train")
-        rewards_per_episode = []
-        scores_per_episode = []
-        best_score = -999999
-        step_count = 0
+        self.rewards_per_episode = []
+        self.scores_per_episode = []
+        self.best_score = -999999
+        self.step_count = 0
             
         for episode in itertools.count():
+            self.episode = episode
             self.restart_game()
             self.number_of_games += 1
             # get the current game state
@@ -124,11 +166,11 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
                 # remember the action and the reward
                 self.remember(current_state, action, reward, next_state, game_over)
                 
-                step_count += 1
+                self.step_count += 1
                 current_state = next_state
                 
                 # 5) Mini‐batch training định kỳ
-                if step_count % TRAIN_INTERVAL == 0 and len(self.memory) >= MIN_MEMORY:
+                if self.step_count % TRAIN_INTERVAL == 0 and len(self.memory) >= MIN_MEMORY:
                     mini_batch = random.sample(self.memory, BATCH_SIZE)
                     states = cp.zeros((BATCH_SIZE, 2*IMG_SIZE**2), dtype=cp.float64)
                     targets = cp.zeros((BATCH_SIZE, 9), dtype=cp.float64)
@@ -143,30 +185,30 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
                     )
 
             # End of episode
-            rewards_per_episode.append(episode_reward)
-            scores_per_episode.append(episode_score)
+            self.rewards_per_episode.append(episode_reward)
+            self.scores_per_episode.append(episode_score)
             
             if episode_score >= self.stop_on_score:
                 print(f"Game {self.number_of_games} finished after {episode} episodes")
                 break
-            if episode_score > best_score:
-                log_message = f"{datetime.now().strftime(DATE_FORMAT)} Episode {episode}: New best score: {episode_score:0.1f} ({(episode_score-best_score)/best_score*100:+.1f}%)"
+            if episode_score > self.best_score:
+                log_message = f"{datetime.now().strftime(DATE_FORMAT)} Episode {episode}: New best score: {episode_score:0.1f} ({(episode_score-self.best_score)/self.best_score*100:+.1f}%)"
                 print(log_message)
                 with open(LOG_PATH, 'a') as log_file:
                     log_file.write(log_message + '\n')
-                best_score = episode_score
+                self.best_score = episode_score
                 self.model.save(episode, True)
             elif episode % 300 == 0:
                 self.model.save(episode, False)
             
-            if not USE_SOFT_UPDATE and step_count >= self.network_update_freq:
+            if not USE_SOFT_UPDATE and self.step_count >= self.network_update_freq:
                 # update target network
                 self.model.hard_update()
-                step_count = 0
+                self.step_count = 0
             
             # Update graph every 5 games
             if self.number_of_games % 5 == 0:
-                plot_training_progress(scores_per_episode, title='Vision BatchInterval Training', show_graph=show_graph, save_dir=GRAPH_PATH)
+                plot_training_progress(self.scores_per_episode, title='Vision BatchInterval Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY

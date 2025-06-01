@@ -44,7 +44,7 @@ def run_game(share_state):
     game = Game(share_state)
     bot_manager = BotManager(game)
     
-    bot_manager.create_bot(bot_type)
+    bot_manager.create_bot(bot_type, True)
     game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)
     
 if __name__ == "__main__":
