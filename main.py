@@ -5,7 +5,7 @@ from configs.bot_config import DodgeAlgorithm, SharedState
 from bot.bot_manager import BotManager
 import threading
 
-bot_type = DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_CUPY
+bot_type = DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_NUMPY
 game_render = True
 bot_mode = "train"
 show_graph = True
@@ -60,11 +60,10 @@ if __name__ == "__main__":
                 os.environ['SDL_VIDEO_WINDOW_POS'] = '200,280' # Move pygame window
             else:
                 plt.ioff()
-        plt.figure()
-        manager = plt.get_current_fig_manager()
-        manager.window.move(690, 200) # Move plot window
+            manager = plt.get_current_fig_manager()
+            manager.window.move(690, 200) # Move plot window
         game = Game()
         bot_manager = BotManager(game)
         
-        bot_manager.create_bot(bot_type, True)
+        bot_manager.create_bot(bot_type)
         game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)

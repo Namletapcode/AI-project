@@ -104,7 +104,7 @@ class Game:
             if method == "numpy":
                 state = state.reshape(len(state), 1)
         return state
-    
+
     def get_reward(self) -> tuple[float, bool]:
         return self.reward if not self.game_over else -100.0, self.game_over
 
