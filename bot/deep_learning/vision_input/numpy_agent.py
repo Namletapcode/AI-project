@@ -106,6 +106,7 @@ class VisionNumpyAgent(BaseAgent):
             
         for episode in itertools.count():
             self.restart_game()
+            self.game.draw()
             self.number_of_games += 1
             # get the current game state
             current_state = self.get_state()

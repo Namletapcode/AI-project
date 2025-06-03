@@ -145,13 +145,13 @@ class Game:
         self.surface.fill((0, 0, 0))
         self.draw_box()
         
-        if self.share_state.bot_draw and draw_extra:
+        if self.share_state is not None and self.share_state.bot_draw and draw_extra:
             draw_extra(current_state, self.share_state)
             
         self.player.draw()
         self.bullet_manager.draw(self.surface)
         
-        if self.share_state.bot_draw and self.share_state.is_vision:
+        if self.share_state is not None and self.share_state.bot_draw and self.share_state.is_vision:
             show_numpy_to_image(get_screen_shot_blue_channel(self.player.x, self.player.y, IMG_SIZE, self.surface), IMG_SIZE)
             
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
