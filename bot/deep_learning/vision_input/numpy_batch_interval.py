@@ -33,7 +33,7 @@ MAX_SKIP_FRAME = 180
 SAVE_STATE_FREQ = 1000
 
 FOLDER_PATH = 'saved_files/vision/numpy'
-# FOLDER_PATH = 'content/drive/MyDrive/AI-project/vision/numpy'
+# FOLDER_PATH = 'drive/MyDrive/AI-project/vision/numpy'
 MODEL_PATH = f'{FOLDER_PATH}/batch_interval.npz'
 GRAPH_PATH = f'{FOLDER_PATH}/batch_interval.png'
 LOG_PATH = f'{FOLDER_PATH}/batch_interval.log'
@@ -43,6 +43,7 @@ class VisionNumpyBatchIntervalAgent(BaseAgent):
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.epsilon = EPSILON
+        self.load_saved_model = load_saved_model
         self.model = Model((IMG_SIZE ** 2) * 2, 64, 9, LEARNING_RATE, DISCOUNT_FACTOR, MODEL_PATH, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
         
         self.rewards_per_episode = []
@@ -52,15 +53,14 @@ class VisionNumpyBatchIntervalAgent(BaseAgent):
         self.episode = 0
         
         self.network_update_freq = NETWORK_UPDATE_FREQ # Update target network every 250 steps
-        
-        if load_saved_model:
-            self.load_training_state()
             
         # Register save handlers
         atexit.register(self.save_training_state) # Normal exits, clean shutdowns
 
     def save_training_state(self):
         """Save all training progress and states"""
+        if self.mode == "perform":
+            return
         training_state = {
             'rewards_per_episode': self.rewards_per_episode,
             'scores_per_episode': self.scores_per_episode,
@@ -132,6 +132,9 @@ class VisionNumpyBatchIntervalAgent(BaseAgent):
     
     def train(self, render: bool = True, show_graph: bool = True):
         self.set_mode("train")
+        
+        if self.load_saved_model:
+            self.load_training_state()
             
         while True:
             self.restart_game()

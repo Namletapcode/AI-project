@@ -5,9 +5,9 @@ from configs.bot_config import DodgeAlgorithm, SharedState
 from bot.bot_manager import BotManager
 import threading
 
-bot_type = DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_NUMPY
+bot_type = DodgeAlgorithm.SUPERVISED
 game_render = True
-bot_mode = "train"
+bot_mode = "perform"
 show_graph = True
 
 HEADLESS_MODE = False # For google colab
@@ -58,12 +58,12 @@ if __name__ == "__main__":
             if show_graph:
                 plt.ion()
                 os.environ['SDL_VIDEO_WINDOW_POS'] = '200,280' # Move pygame window
+                manager = plt.get_current_fig_manager()
+                manager.window.move(690, 200) # Move plot window
             else:
                 plt.ioff()
-            manager = plt.get_current_fig_manager()
-            manager.window.move(690, 200) # Move plot window
         game = Game()
         bot_manager = BotManager(game)
         
-        bot_manager.create_bot(bot_type)
+        bot_manager.create_bot(bot_type, True)
         game.run(bot_manager, mode=bot_mode, render=game_render, show_graph=show_graph)

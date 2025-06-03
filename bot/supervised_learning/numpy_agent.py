@@ -95,6 +95,9 @@ class Supervised_Agent(BaseAgent):
         model_result = self.model.forward(state)[2]
         action[np.argmax(model_result)] = 1
         return action
+
+    def get_action_idx(self, state: np.ndarray) -> int:
+        return np.argmax(self.model.forward(state)[2])
     
     def get_coach_action(self, state: np.ndarray) -> np.ndarray:
         """state = self.game.get_state(True)
