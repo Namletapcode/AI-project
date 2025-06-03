@@ -31,12 +31,15 @@ IMG_SIZE = 80 # 80 x 80 pixel^2
 USE_SOFT_UPDATE = False
 TAU = 0.005
 
+MAX_SKIP_FRAME = 180
+SAVE_STATE_FREQ = 1000
+
 MODEL_PATH = 'saved_files/vision/cupy/batch_interval.npz'
 GRAPH_PATH = 'saved_files/vision/cupy/batch_interval.png'
 LOG_PATH = 'saved_files/vision/cupy/batch_interval.log'
 TRAINING_STATE_PATH = 'saved_files/vision/cupy/batch_interval.pkl'
 
-class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
+class VisionCupyBatchIntervalAgent(BaseAgent):
 
     def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
@@ -148,6 +151,11 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
             
             while not game_over and episode_score < self.stop_on_score:
                 
+                if not cp.any(current_state) and self.game.score < MAX_SKIP_FRAME:
+                    action_idx = 8  # Not move
+                    self.perform_action(action_idx, render)
+                    current_state = self.get_state()
+                    continue
                 # get the move based on the state
                 action = self.get_action(current_state)
 
@@ -210,6 +218,9 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
             if self.number_of_games % 5 == 0:
                 plot_training_progress(self.scores_per_episode, title='Vision BatchInterval Training', show_graph=show_graph, save_dir=GRAPH_PATH)
                 
+            if self.number_of_games % SAVE_STATE_FREQ == 0:
+                self.save_training_state()
+                
             # reduce epsilon / percentage of random move
             self.epsilon *= EPSILON_DECAY
             self.epsilon = max(self.epsilon, MIN_EPSILON)
@@ -243,7 +254,7 @@ class VisionCupyBatchIntervalNumpyAgent(BaseAgent):
         self.model.load()
 
 if __name__ == '__main__':
-    agent = VisionCupyBatchIntervalNumpyAgent(Game())
+    agent = VisionCupyBatchIntervalAgent(Game())
 
     mode = "train"
 
