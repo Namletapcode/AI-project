@@ -22,14 +22,15 @@ MAX_CRI_MEM_SIZE = 1000
 
 IMG_SIZE = 50 # 50 x 50 pixel^2
 
-model_path = 'saved_model/vision_numpy_model.npz'
+FOLDER_PATH = 'saved_files/vision/numpy'
+MODEL_PATH = f'{FOLDER_PATH}/long_short.npz'
 
-class Agent(BaseAgent):
+class VisionNumpyLongShortAgent(BaseAgent):
 
-    def __init__(self, game: Game):
+    def __init__(self, game: Game, load_saved_model: bool = False):
         super().__init__(game)
         self.epsillon = EPSILON
-        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, 1, model_path) #warning: the number of neurals in first layer must match the size of game.get_state()
+        self.model = Model((IMG_SIZE ** 2) * 2, 9, 9, LEARNING_RATE, 1, MODEL_PATH, load_saved_model) #warning: the number of neurals in first layer must match the size of game.get_state()
         self.reset_self_img()
 
         # testing: critical memory
@@ -54,11 +55,14 @@ class Agent(BaseAgent):
                 move[random.randint(0, 8)] = 1
             else:
                 # if not model will predict the move
-                move[np.argmax(self.model.forward(state)[2])] = 1
+                move[np.argmax(self.model.predict(state))] = 1
         elif self.mode == "perform":
             # always use model to predict move in pridict move / always predict
-            move[np.argmax(self.model.forward(state)[2])] = 1
+            move[np.argmax(self.model.predict(state))] = 1
         return move
+    
+    def get_action_idx(self, state: np.ndarray) -> int:
+        return np.argmax(self.model.predict(state))
     
     def restart_game(self):
         self.game.restart_game()
@@ -194,7 +198,7 @@ class Agent(BaseAgent):
         self.model.load()
 
 if __name__ == '__main__':
-    agent = Agent(Game())
+    agent = VisionNumpyLongShortAgent(Game())
     mode = "perform"
 
     if mode == "train":

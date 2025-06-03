@@ -9,6 +9,7 @@ from bot.deep_learning.param_input.numpy_batch_interval_agent import ParamNumpyB
 from bot.deep_learning.param_input.numpy_long_short_agent import ParamNumpyLongShortAgent
 from bot.deep_learning.param_input.pytorch_agent import ParamTorchAgent
 from bot.deep_learning.vision_input.numpy_batch_interval import VisionNumpyBatchIntervalAgent
+from bot.deep_learning.vision_input.numpy_long_short import VisionNumpyLongShortAgent
 from bot.deep_learning.vision_input.cupy_batch_interval_agent import VisionCupyBatchIntervalAgent
 from bot.deep_learning.vision_input.cupy_long_short_agent import VisionCupyLongShortAgent
 from bot.supervised_learning.numpy_agent import Supervised_Agent
@@ -45,6 +46,9 @@ class BotManager:
                     self.current_bot = ParamTorchAgent(self.game, load_saved_model)
                 case DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_NUMPY:
                     self.current_bot = VisionNumpyBatchIntervalAgent(self.game, load_saved_model)
+                    self.is_vision = True
+                case DodgeAlgorithm.DL_VISION_LONG_SHORT_NUMPY:
+                    self.current_bot = VisionNumpyLongShortAgent(self.game, load_saved_model)
                     self.is_vision = True
                 case DodgeAlgorithm.DL_VISION_BATCH_INTERVAL_CUPY:
                     self.current_bot = VisionCupyBatchIntervalAgent(self.game, load_saved_model)
