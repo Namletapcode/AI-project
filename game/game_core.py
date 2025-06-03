@@ -1,5 +1,5 @@
 import pygame
-import sys
+import sys, os
 import math
 import numpy as np
 import cupy as cp
@@ -13,13 +13,22 @@ from game.bullet_manager import BulletManager
 from game.player import Player
 
 class Game:
-    def __init__(self, share_state=None):
+    def __init__(self, share_state=None, render: bool = True, position=None):
         self.share_state = share_state
+        # Set window position if provided
         pygame.display.init()
         pygame.font.init()
-        self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Touhou")
+        if render:
+            if position is not None:
+                x, y = position
+                os.environ['SDL_VIDEO_WINDOW_POS'] = f"{x},{y}"
+            self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+            pygame.display.set_caption("Touhou")
+        else:
+            # Create surface without window
+            self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock() 
+        self.render = render
         self.screen_rect = self.surface.get_rect()
         self.update_counter = 0
         self.player = Player(self.surface)
@@ -159,7 +168,8 @@ class Game:
     
         self.surface.blit(score_text, (10, 10))
         # self.surface.blit(time_text, (10, 40))
-        pygame.display.flip()
+        if self.render:
+            pygame.display.flip()
 
     def draw_box(self):
         pygame.draw.rect(self.surface, (255, 255, 255), (BOX_TOP, BOX_LEFT, BOX_SIZE, BOX_SIZE), 2)

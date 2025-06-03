@@ -78,7 +78,7 @@ class BotManager:
         
         if share_state.is_vision:
             player.draw_surround_square(IMG_SIZE)
-            self.game.bullet_manager.color_in_square(IMG_SIZE, (128,0,128))
+            self.game.bullet_manager.color_in_square(IMG_SIZE, (128, 0, 255))
         else:
             # Vẽ vòng tròn scan
             player.draw_surround_circle(SCAN_RADIUS)

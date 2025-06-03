@@ -44,6 +44,30 @@ class HeuristicDodgeBot(BaseBot):
         self.action[best_direction_index] = 1
         self.action[8] = 0
         return self.action
+    
+    def get_action_idx(self, state:list) -> int:
+        # state: list bullet in SCAN_RADIUS
+        self.reset_action()
+
+        if len(state) == 0:
+            return 8
+
+        method_map = {
+            DodgeAlgorithm.FURTHEST_SAFE_DIRECTION: self.furthest_safe,
+            DodgeAlgorithm.LEAST_DANGER_PATH: self.least_danger,
+            DodgeAlgorithm.LEAST_DANGER_PATH_ADVANCED: self.least_danger_advanced,
+            DodgeAlgorithm.RANDOM_SAFE_ZONE: self.random_move,
+            DodgeAlgorithm.OPPOSITE_THREAT_DIRECTION: self.opposite_threat
+        }
+        
+        # Lấy hàm xử lý né đạn dựa trên self.method từ method_map.
+        # Nếu self.method không tồn tại trong map, sử dụng hàm mặc định lambda *_: 8.
+        # lambda *_: 8 là một hàm nhận bất kỳ số lượng tham số nào nhưng luôn trả về 8 (vô hiệu hóa hành động).
+        func = method_map.get(self.method, lambda *_: 8)
+        
+        best_direction_index = func(state)
+        
+        return best_direction_index
 
     def furthest_safe(self, bullets_near_player):
         safe_scores = []

@@ -5,7 +5,7 @@ from configs.bot_config import DodgeAlgorithm, SharedState
 from bot.bot_manager import BotManager
 import threading
 
-bot_type = DodgeAlgorithm.SUPERVISED
+bot_type = DodgeAlgorithm.DL_PARAM_LONG_SHORT_NUMPY
 game_render = True
 bot_mode = "perform"
 show_graph = True
@@ -57,12 +57,11 @@ if __name__ == "__main__":
         if not HEADLESS_MODE:
             if show_graph:
                 plt.ion()
-                os.environ['SDL_VIDEO_WINDOW_POS'] = '200,280' # Move pygame window
                 manager = plt.get_current_fig_manager()
                 manager.window.move(690, 200) # Move plot window
             else:
                 plt.ioff()
-        game = Game()
+        game = Game(position=(200,280))
         bot_manager = BotManager(game)
         
         bot_manager.create_bot(bot_type, True)
